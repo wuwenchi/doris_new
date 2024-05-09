@@ -390,6 +390,7 @@ struct TIcebergTableSink {
     8: optional string outputPath
     9: optional map<string, string> hadoop_config
     10: optional bool overwrite
+    11: Types.TFileType file_type
 }
 
 struct TDataSink {
