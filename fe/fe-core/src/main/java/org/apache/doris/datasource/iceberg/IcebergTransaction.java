@@ -21,6 +21,7 @@
 package org.apache.doris.datasource.iceberg;
 
 import org.apache.doris.common.UserException;
+import org.apache.doris.nereids.trees.plans.commands.insert.BaseExternalTableInsertCommandContext;
 import org.apache.doris.thrift.TFileContent;
 import org.apache.doris.thrift.TIcebergCommitData;
 import org.apache.doris.transaction.Transaction;
@@ -28,9 +29,12 @@ import org.apache.doris.transaction.Transaction;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.Lists;
 import org.apache.iceberg.AppendFiles;
+import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileContent;
 import org.apache.iceberg.Metrics;
+import org.apache.iceberg.ReplacePartitions;
+import org.apache.iceberg.SnapshotUpdate;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.logging.log4j.LogManager;
@@ -47,6 +51,7 @@ public class IcebergTransaction implements Transaction {
     private final IcebergMetadataOps ops;
     private org.apache.iceberg.Transaction transaction;
     private final List<TIcebergCommitData> commitDataList = Lists.newArrayList();
+    private BaseExternalTableInsertCommandContext ctx;
 
     public IcebergTransaction(IcebergMetadataOps ops) {
         this.ops = ops;
@@ -58,33 +63,59 @@ public class IcebergTransaction implements Transaction {
         }
     }
 
-    public void beginInsert(String dbName, String tbName) {
+    public void beginInsert(String dbName, String tbName, BaseExternalTableInsertCommandContext ctx) {
         Table icebergTable = ops.getCatalog().loadTable(TableIdentifier.of(dbName, tbName));
         transaction = icebergTable.newTransaction();
+        this.ctx = ctx;
     }
 
     public void finishInsert() {
-        Table icebergTable = transaction.table();
+        // TODO 增加一个writer option，包含 (insert into, insert overwrite, merge, update),
+        //  代替原来的 overwrite
+        SnapshotUpdate<?> snapshotUpdate;
+        if (ctx.isOverwrite()) {
+            snapshotUpdate = asReplacePartitions();
+        } else {
+            snapshotUpdate = asAppend();
+        }
+
+        // in this commit, it will generate metadata(manifest and snapshot)
+        // after commit, in current transaction, you can already see the new snapshot
+        snapshotUpdate.commit();
+    }
+
+    public AppendFiles asAppend() {
         AppendFiles appendFiles = transaction.newAppend();
 
         for (CommitTaskData task : convertToCommitTaskData()) {
-            DataFiles.Builder builder = DataFiles.builder(icebergTable.spec())
-                    .withPath(task.getPath())
-                    .withFileSizeInBytes(task.getFileSizeInBytes())
-                    .withFormat(IcebergUtils.getFileFormat(icebergTable))
-                    .withMetrics(task.getMetrics());
-
-            if (icebergTable.spec().isPartitioned()) {
-                List<String> partitionValues = task.getPartitionValues()
-                        .orElseThrow(() -> new VerifyException("No partition data for partitioned table"));
-                builder.withPartitionValues(partitionValues);
-            }
-            appendFiles.appendFile(builder.build());
+            appendFiles.appendFile(genDatafile(task));
         }
+        return appendFiles;
+    }
 
-        // in appendFiles.commit, it will generate metadata(manifest and snapshot)
-        // after appendFiles.commit, in current transaction, you can already see the new snapshot
-        appendFiles.commit();
+    public ReplacePartitions asReplacePartitions() {
+        ReplacePartitions replacePartitions = transaction.newReplacePartitions();
+
+        for (CommitTaskData task : convertToCommitTaskData()) {
+            replacePartitions.addFile(genDatafile(task));
+        }
+        return replacePartitions;
+    }
+
+    private DataFile genDatafile(CommitTaskData task) {
+        Table icebergTable = transaction.table();
+        DataFiles.Builder builder = DataFiles.builder(icebergTable.spec())
+                .withPath(task.getPath())
+                .withFileSizeInBytes(task.getFileSizeInBytes())
+                .withFormat(IcebergUtils.getFileFormat(icebergTable))
+                .withMetrics(task.getMetrics());
+
+        if (icebergTable.spec().isPartitioned()) {
+            List<String> partitionValues = task.getPartitionValues()
+                    .orElseThrow(() -> new VerifyException("No partition data for partitioned table"));
+            builder.withPartitionValues(partitionValues);
+        }
+        return builder.build();
     }
 
     public List<CommitTaskData> convertToCommitTaskData() {

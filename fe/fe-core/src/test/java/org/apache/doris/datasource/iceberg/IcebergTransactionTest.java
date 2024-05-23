@@ -18,6 +18,7 @@
 package org.apache.doris.datasource.iceberg;
 
 import org.apache.doris.common.UserException;
+import org.apache.doris.nereids.trees.plans.commands.insert.BaseExternalTableInsertCommandContext;
 import org.apache.doris.thrift.TFileContent;
 import org.apache.doris.thrift.TIcebergCommitData;
 
@@ -38,7 +39,9 @@ import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.util.DateTimeUtil;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class IcebergTransactionTest {
@@ -63,7 +67,16 @@ public class IcebergTransactionTest {
     @BeforeClass
     public static void beforeClass() throws IOException {
         createCatalog();
+    }
+
+    @Before
+    public void before() throws IOException {
         createTable();
+    }
+
+    @After
+    public void after() {
+        dropTable();
     }
 
     public static void createCatalog() throws IOException {
@@ -75,11 +88,11 @@ public class IcebergTransactionTest {
         hadoopCatalog.setConf(new Configuration());
         hadoopCatalog.initialize("df", props);
         ops = new IcebergMetadataOps(null, hadoopCatalog);
+        ((HadoopCatalog) ops.getCatalog()).createNamespace(Namespace.of(dbName));
     }
 
-    public static void createTable() throws IOException {
+    public void createTable() throws IOException {
         HadoopCatalog icebergCatalog = (HadoopCatalog) ops.getCatalog();
-        icebergCatalog.createNamespace(Namespace.of(dbName));
         schema = new Schema(
             Types.NestedField.required(11, "ts1", Types.TimestampType.withoutZone()),
             Types.NestedField.required(12, "ts2", Types.TimestampType.withoutZone()),
@@ -112,7 +125,13 @@ public class IcebergTransactionTest {
         icebergCatalog.createTable(TableIdentifier.of(dbName, tbWithoutPartition), schema);
     }
 
-    public List<String> createPartitionValues() {
+    public void dropTable() {
+        HadoopCatalog icebergCatalog = (HadoopCatalog) ops.getCatalog();
+        icebergCatalog.dropTable(TableIdentifier.of(dbName, tbWithPartition));
+        icebergCatalog.dropTable(TableIdentifier.of(dbName, tbWithoutPartition));
+    }
+
+    public List<String> createPartitionValues(String bucketNum) {
 
         Instant instant = Instant.parse("2024-12-11T12:34:56.123456Z");
         long ts = DateTimeUtil.microsFromInstant(instant);
@@ -138,25 +157,25 @@ public class IcebergTransactionTest {
         // truncate str2
         partitionValues.add("2024-12-11");
         // bucket int1
-        partitionValues.add("1");
+        partitionValues.add(bucketNum);
 
         return partitionValues;
     }
 
     @Test
     public void testPartitionedTable() throws UserException {
-        List<String> partitionValues = createPartitionValues();
+        List<String> partitionValues = createPartitionValues("1");
 
         List<TIcebergCommitData> ctdList = new ArrayList<>();
         TIcebergCommitData ctd1 = new TIcebergCommitData();
-        ctd1.setFilePath("f1.parquet");
+        ctd1.setFilePath(getParquetFile());
         ctd1.setPartitionValues(partitionValues);
         ctd1.setFileContent(TFileContent.DATA);
         ctd1.setRowCount(2);
         ctd1.setFileSize(2);
 
         TIcebergCommitData ctd2 = new TIcebergCommitData();
-        ctd2.setFilePath("f2.parquet");
+        ctd2.setFilePath(getParquetFile());
         ctd2.setPartitionValues(partitionValues);
         ctd2.setFileContent(TFileContent.DATA);
         ctd2.setRowCount(4);
@@ -167,11 +186,11 @@ public class IcebergTransactionTest {
 
         IcebergTransaction txn = getTxn();
         txn.updateIcebergCommitData(ctdList);
-        txn.beginInsert(dbName, tbWithPartition);
+        txn.beginInsert(dbName, tbWithPartition, getInsertIntoCtx());
         txn.finishInsert();
         txn.commit();
         Table table = ops.getCatalog().loadTable(TableIdentifier.of(dbName, tbWithPartition));
-        checkSnapshotProperties(table.currentSnapshot().summary(), "6", "2", "6");
+        checkSnapshotProperties(table.currentSnapshot().summary(), "6", "2", "6", "6", "2", "6");
 
         checkPushDownByPartitionForTs(table, "ts1");
         checkPushDownByPartitionForTs(table, "ts2");
@@ -254,13 +273,13 @@ public class IcebergTransactionTest {
     public void testUnPartitionedTable() throws UserException {
         ArrayList<TIcebergCommitData> ctdList = new ArrayList<>();
         TIcebergCommitData ctd1 = new TIcebergCommitData();
-        ctd1.setFilePath("f1.parquet");
+        ctd1.setFilePath(getParquetFile());
         ctd1.setFileContent(TFileContent.DATA);
         ctd1.setRowCount(2);
         ctd1.setFileSize(2);
 
         TIcebergCommitData ctd2 = new TIcebergCommitData();
-        ctd2.setFilePath("f1.parquet");
+        ctd2.setFilePath(getParquetFile());
         ctd2.setFileContent(TFileContent.DATA);
         ctd2.setRowCount(4);
         ctd2.setFileSize(4);
@@ -270,21 +289,28 @@ public class IcebergTransactionTest {
 
         IcebergTransaction txn = getTxn();
         txn.updateIcebergCommitData(ctdList);
-        txn.beginInsert(dbName, tbWithoutPartition);
+        txn.beginInsert(dbName, tbWithoutPartition, getInsertIntoCtx());
         txn.finishInsert();
         txn.commit();
 
         Table table = ops.getCatalog().loadTable(TableIdentifier.of(dbName, tbWithoutPartition));
-        checkSnapshotProperties(table.currentSnapshot().summary(), "6", "2", "6");
+        checkSnapshotProperties(table.currentSnapshot().summary(), "6", "2", "6", "6", "2", "6");
     }
 
     public void checkSnapshotProperties(Map<String, String> props,
                                         String addRecords,
                                         String addFileCnt,
-                                        String addFileSize) {
+                                        String addFileSize,
+                                        String totalRecords,
+                                        String totalFileCnt,
+                                        String totalFileSize) {
         Assert.assertEquals(addRecords, props.get("added-records"));
         Assert.assertEquals(addFileCnt, props.get("added-data-files"));
         Assert.assertEquals(addFileSize, props.get("added-files-size"));
+        Assert.assertEquals(addFileSize, props.get("added-files-size"));
+        Assert.assertEquals(totalRecords, props.get("total-records"));
+        Assert.assertEquals(totalFileCnt, props.get("total-data-files"));
+        Assert.assertEquals(totalFileSize, props.get("total-files-size"));
     }
 
     public String numToYear(Integer num) {
@@ -324,5 +350,95 @@ public class IcebergTransactionTest {
 
     public IcebergTransaction getTxn() {
         return new IcebergTransaction(ops);
+    }
+
+    @Test
+    public void testUnPartitionedTableOverwriteWithEmptyTable() throws UserException {
+        // overwrite with empty table
+        overwriteUnPartitionTable();
+    }
+
+    @Test
+    public void testUnPartitionedTableOverwriteWithExistTable() throws UserException {
+        // overwrite with exist table
+        testUnPartitionedTable();
+        overwriteUnPartitionTable();
+    }
+
+    public void overwriteUnPartitionTable() throws UserException {
+        ArrayList<TIcebergCommitData> ctdList = new ArrayList<>();
+        TIcebergCommitData ctd1 = new TIcebergCommitData();
+        ctd1.setFilePath(getParquetFile());
+        ctd1.setFileContent(TFileContent.DATA);
+        ctd1.setRowCount(2);
+        ctd1.setFileSize(2);
+
+        ctdList.add(ctd1);
+        IcebergTransaction txn = getTxn();
+        txn.updateIcebergCommitData(ctdList);
+        txn.beginInsert(dbName, tbWithoutPartition, getInsertOverwriteCtx());
+        txn.finishInsert();
+        txn.commit();
+
+        Table table = ops.getCatalog().loadTable(TableIdentifier.of(dbName, tbWithoutPartition));
+        checkSnapshotProperties(table.currentSnapshot().summary(), "2", "1", "2", "2", "1", "2");
+    }
+
+    public String getParquetFile() {
+        return UUID.randomUUID() + ".parquet";
+    }
+
+    @Test
+    public void testPartitionedTableWithEmptyTable() throws UserException {
+        overwritePartitionTable();
+    }
+
+    @Test
+    public void testPartitionedTableWithExistTable() throws UserException {
+        testPartitionedTable();
+        // The original partition is overwritten with new data and an additional partition is added
+        overwritePartitionTable();
+    }
+
+    public void overwritePartitionTable() throws UserException {
+        List<TIcebergCommitData> ctdList = new ArrayList<>();
+
+        List<String> partitionValues = createPartitionValues("0");
+        TIcebergCommitData ctd1 = new TIcebergCommitData();
+        ctd1.setFilePath(getParquetFile());
+        ctd1.setPartitionValues(partitionValues);
+        ctd1.setFileContent(TFileContent.DATA);
+        ctd1.setRowCount(3);
+        ctd1.setFileSize(3);
+
+        List<String> partitionValues2 = createPartitionValues("1");
+        TIcebergCommitData ctd2 = new TIcebergCommitData();
+        ctd2.setFilePath(getParquetFile());
+        ctd2.setPartitionValues(partitionValues2);
+        ctd2.setFileContent(TFileContent.DATA);
+        ctd2.setRowCount(2);
+        ctd2.setFileSize(2);
+
+        ctdList.add(ctd1);
+        ctdList.add(ctd2);
+
+        IcebergTransaction txn = getTxn();
+        txn.updateIcebergCommitData(ctdList);
+        txn.beginInsert(dbName, tbWithPartition, getInsertOverwriteCtx());
+        txn.finishInsert();
+        txn.commit();
+
+        Table table = ops.getCatalog().loadTable(TableIdentifier.of(dbName, tbWithPartition));
+        checkSnapshotProperties(table.currentSnapshot().summary(), "5", "2", "5", "5", "2", "5");
+    }
+
+    public BaseExternalTableInsertCommandContext getInsertIntoCtx() {
+        return new BaseExternalTableInsertCommandContext();
+    }
+
+    public BaseExternalTableInsertCommandContext getInsertOverwriteCtx() {
+        BaseExternalTableInsertCommandContext ctx = new BaseExternalTableInsertCommandContext();
+        ctx.setOverwrite(true);
+        return ctx;
     }
 }

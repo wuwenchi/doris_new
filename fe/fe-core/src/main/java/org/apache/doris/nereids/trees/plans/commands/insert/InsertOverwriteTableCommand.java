@@ -28,7 +28,9 @@ import org.apache.doris.datasource.hive.HMSExternalTable;
 import org.apache.doris.insertoverwrite.InsertOverwriteUtil;
 import org.apache.doris.mysql.privilege.PrivPredicate;
 import org.apache.doris.nereids.NereidsPlanner;
+import org.apache.doris.nereids.analyzer.UnboundBaseExternalTableSink;
 import org.apache.doris.nereids.analyzer.UnboundHiveTableSink;
+import org.apache.doris.nereids.analyzer.UnboundIcebergTableSink;
 import org.apache.doris.nereids.analyzer.UnboundTableSink;
 import org.apache.doris.nereids.analyzer.UnboundTableSinkCreator;
 import org.apache.doris.nereids.exceptions.AnalysisException;
@@ -217,8 +219,8 @@ public class InsertOverwriteTableCommand extends Command implements ForwardWithS
             // 1. for overwrite situation, we disable auto create partition.
             // 2. we save and pass overwrite auto detect by insertCtx
             insertCtx = new OlapInsertCommandContext(false);
-        } else if (logicalQuery instanceof UnboundHiveTableSink) {
-            UnboundHiveTableSink<?> sink = (UnboundHiveTableSink<?>) logicalQuery;
+        } else if (logicalQuery instanceof UnboundBaseExternalTableSink) {
+            UnboundBaseExternalTableSink<?> sink = (UnboundBaseExternalTableSink<?>) logicalQuery;
             copySink = (UnboundLogicalSink<?>) UnboundTableSinkCreator.createUnboundTableSink(
                     sink.getNameParts(),
                     sink.getColNames(),
@@ -228,8 +230,15 @@ public class InsertOverwriteTableCommand extends Command implements ForwardWithS
                     false,
                     sink.getDMLCommandType(),
                     (LogicalPlan) (sink.child(0)));
-            insertCtx = new HiveInsertCommandContext();
-            ((HiveInsertCommandContext) insertCtx).setOverwrite(true);
+            if (logicalQuery instanceof UnboundHiveTableSink) {
+                insertCtx = new HiveInsertCommandContext();
+            } else if (logicalQuery instanceof UnboundIcebergTableSink) {
+                insertCtx = new BaseExternalTableInsertCommandContext();
+            } else {
+                throw new UserException("Current table does not support insert overwrite yet: "
+                        + logicalQuery.getClass().getSimpleName());
+            }
+            ((BaseExternalTableInsertCommandContext) insertCtx).setOverwrite(true);
         } else {
             throw new UserException("Current catalog does not support insert overwrite yet.");
         }
@@ -248,7 +257,10 @@ public class InsertOverwriteTableCommand extends Command implements ForwardWithS
         InsertCommandContext insertCtx;
         if (logicalQuery instanceof UnboundTableSink) {
             insertCtx = new OlapInsertCommandContext(false,
-                    ((UnboundTableSink<?>) logicalQuery).isAutoDetectPartition(), groupId);
+                ((UnboundTableSink<?>) logicalQuery).isAutoDetectPartition(), groupId);
+        } else if (logicalQuery instanceof UnboundIcebergTableSink) {
+            insertCtx = new BaseExternalTableInsertCommandContext();
+            ((BaseExternalTableInsertCommandContext) insertCtx).setOverwrite(true);
         } else if (logicalQuery instanceof UnboundHiveTableSink) {
             insertCtx = new HiveInsertCommandContext();
             ((HiveInsertCommandContext) insertCtx).setOverwrite(true);

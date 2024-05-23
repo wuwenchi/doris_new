@@ -24,6 +24,7 @@ import org.apache.doris.nereids.NereidsPlanner;
 import org.apache.doris.qe.ConnectContext;
 import org.apache.doris.transaction.TransactionType;
 
+import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,6 +67,10 @@ public class IcebergInsertExecutor extends BaseExternalTableInsertExecutor {
     @Override
     protected void beforeExec() {
         IcebergTransaction transaction = (IcebergTransaction) transactionManager.getTransaction(txnId);
-        transaction.beginInsert(((IcebergExternalTable) table).getDbName(), table.getName());
+        Preconditions.checkArgument(insertCtx.isPresent(), "insert context must be present");
+        transaction.beginInsert(
+                ((IcebergExternalTable) table).getDbName(),
+                table.getName(),
+                (BaseExternalTableInsertCommandContext) insertCtx.get());
     }
 }
