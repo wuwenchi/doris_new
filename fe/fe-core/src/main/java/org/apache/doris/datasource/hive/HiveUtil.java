@@ -265,6 +265,10 @@ public final class HiveUtil {
             inputFormat = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat";
             outputFormat = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat";
             serDe = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe";
+        } else if (fileFormat.equalsIgnoreCase("text")) {
+            inputFormat = "org.apache.hadoop.mapred.TextInputFormat";
+            outputFormat = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat";
+            serDe = "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe";
         } else {
             throw new IllegalArgumentException("Creating table with an unsupported file format: " + fileFormat);
         }
