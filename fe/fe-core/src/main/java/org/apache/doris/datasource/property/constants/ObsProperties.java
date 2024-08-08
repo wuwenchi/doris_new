@@ -37,7 +37,7 @@ public class ObsProperties extends BaseProperties {
 
     public static class FS {
         public static final String SESSION_TOKEN = "fs.obs.session.token";
-        public static final String IMPL_DISABLE_CACHE = "fs.obs.impl.disable.cache";
+        // public static final String IMPL_DISABLE_CACHE = "fs.obs.impl.disable.cache";
     }
 
     public static CloudCredential getCredential(Map<String, String> props) {

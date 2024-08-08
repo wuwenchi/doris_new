@@ -836,7 +836,7 @@ public class HiveMetaStoreClientHelper {
         String scheme = hudiBasePathUri.getScheme();
         if (!Strings.isNullOrEmpty(scheme)) {
             // Avoid using Cache in Hadoop FileSystem, which may cause FE OOM.
-            conf.set("fs." + scheme + ".impl.disable.cache", "true");
+            // conf.set("fs." + scheme + ".impl.disable.cache", "true");
         }
         return HadoopUGI.ugiDoAs(AuthenticationConfig.getKerberosConfig(conf),
                 () -> HoodieTableMetaClient.builder().setConf(conf).setBasePath(hudiBasePath).build());

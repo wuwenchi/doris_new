@@ -107,21 +107,21 @@ public class FileSystemManager {
     private static final String FS_DEFAULTFS_KEY = "fs.defaultFS";
     // If this property is not set to "true", FileSystem instance will be returned from cache
     // which is not thread-safe and may cause 'Filesystem closed' exception when it is closed by other thread.
-    private static final String FS_HDFS_IMPL_DISABLE_CACHE = "fs.hdfs.impl.disable.cache";
+    // private static final String FS_HDFS_IMPL_DISABLE_CACHE = "fs.hdfs.impl.disable.cache";
 
     // arguments for s3a
     private static final String FS_S3A_ACCESS_KEY = "fs.s3a.access.key";
     private static final String FS_S3A_SECRET_KEY = "fs.s3a.secret.key";
     private static final String FS_S3A_ENDPOINT = "fs.s3a.endpoint";
     // This property is used like 'fs.hdfs.impl.disable.cache'
-    private static final String FS_S3A_IMPL_DISABLE_CACHE = "fs.s3a.impl.disable.cache";
+    // private static final String FS_S3A_IMPL_DISABLE_CACHE = "fs.s3a.impl.disable.cache";
 
     // arguments for obs
     private static final String FS_OBS_ACCESS_KEY = "fs.obs.access.key";
     private static final String FS_OBS_SECRET_KEY = "fs.obs.secret.key";
     private static final String FS_OBS_ENDPOINT = "fs.obs.endpoint";
     // This property is used like 'fs.hdfs.impl.disable.cache'
-    private static final String FS_OBS_IMPL_DISABLE_CACHE = "fs.obs.impl.disable.cache";
+    // private static final String FS_OBS_IMPL_DISABLE_CACHE = "fs.obs.impl.disable.cache";
     private static final String FS_OBS_IMPL = "fs.obs.impl";
 
     // arguments for ks3
@@ -130,14 +130,14 @@ public class FileSystemManager {
     private static final String FS_KS3_ENDPOINT = "fs.ks3.endpoint";
     private static final String FS_KS3_IMPL = "fs.ks3.impl";
     // This property is used like 'fs.ks3.impl.disable.cache'
-    private static final String FS_KS3_IMPL_DISABLE_CACHE = "fs.ks3.impl.disable.cache";
+    // private static final String FS_KS3_IMPL_DISABLE_CACHE = "fs.ks3.impl.disable.cache";
 
     // arguments for oss
     private static final String FS_OSS_ACCESS_KEY = "fs.oss.accessKeyId";
     private static final String FS_OSS_SECRET_KEY = "fs.oss.accessKeySecret";
     private static final String FS_OSS_ENDPOINT = "fs.oss.endpoint";
     // This property is used like 'fs.oss.impl.disable.cache'
-    private static final String FS_OSS_IMPL_DISABLE_CACHE = "fs.oss.impl.disable.cache";
+    // private static final String FS_OSS_IMPL_DISABLE_CACHE = "fs.oss.impl.disable.cache";
     private static final String FS_OSS_IMPL = "fs.oss.impl";
 
     // arguments for cos
@@ -145,7 +145,7 @@ public class FileSystemManager {
     private static final String FS_COS_SECRET_KEY = "fs.cosn.userinfo.secretKey";
     private static final String FS_COS_ENDPOINT = "fs.cosn.bucket.endpoint_suffix";
     private static final String FS_COS_IMPL = "fs.cosn.impl";
-    private static final String FS_COS_IMPL_DISABLE_CACHE = "fs.cosn.impl.disable.cache";
+    // private static final String FS_COS_IMPL_DISABLE_CACHE = "fs.cosn.impl.disable.cache";
 
     // arguments for bos
     private static final String FS_BOS_ACCESS_KEY = "fs.bos.access.key";
@@ -418,7 +418,7 @@ public class FileSystemManager {
                     }
                 }
 
-                conf.set(FS_HDFS_IMPL_DISABLE_CACHE, "true");
+                // conf.set(FS_HDFS_IMPL_DISABLE_CACHE, "true");
                 FileSystem dfsFileSystem = null;
                 if (authentication.equals(AUTHENTICATION_SIMPLE) &&
                     properties.containsKey(USER_NAME_KEY) && !Strings.isNullOrEmpty(username)) {
@@ -459,7 +459,7 @@ public class FileSystemManager {
         String secretKey = properties.getOrDefault(FS_S3A_SECRET_KEY, "");
         String endpoint = properties.getOrDefault(FS_S3A_ENDPOINT, "");
         String host = S3A_SCHEME + "://" + endpoint;
-        String disableCache = properties.getOrDefault(FS_S3A_IMPL_DISABLE_CACHE, "true");
+        // String disableCache = properties.getOrDefault(FS_S3A_IMPL_DISABLE_CACHE, "true");
         String s3aUgi = accessKey + "," + secretKey;
         FileSystemIdentity fileSystemIdentity = new FileSystemIdentity(host, s3aUgi);
         BrokerFileSystem fileSystem = updateCachedFileSystem(fileSystemIdentity, properties);
@@ -472,7 +472,7 @@ public class FileSystemManager {
                 conf.set(FS_S3A_ACCESS_KEY, accessKey);
                 conf.set(FS_S3A_SECRET_KEY, secretKey);
                 conf.set(FS_S3A_ENDPOINT, endpoint);
-                conf.set(FS_S3A_IMPL_DISABLE_CACHE, disableCache);
+                // conf.set(FS_S3A_IMPL_DISABLE_CACHE, disableCache);
                 FileSystem s3AFileSystem = FileSystem.get(pathUri.getUri(), conf);
                 fileSystem.setFileSystem(s3AFileSystem);
             }
@@ -535,7 +535,7 @@ public class FileSystemManager {
         String accessKey = properties.getOrDefault(FS_OBS_ACCESS_KEY, "");
         String secretKey = properties.getOrDefault(FS_OBS_SECRET_KEY, "");
         String endpoint = properties.getOrDefault(FS_OBS_ENDPOINT, "");
-        String disableCache = properties.getOrDefault(FS_OBS_IMPL_DISABLE_CACHE, "true");
+        // String disableCache = properties.getOrDefault(FS_OBS_IMPL_DISABLE_CACHE, "true");
         String host = OBS_SCHEME + "://" + endpoint + "/" + pathUri.getUri().getHost();
         String obsUgi = accessKey + "," + secretKey;
         FileSystemIdentity fileSystemIdentity = new FileSystemIdentity(host, obsUgi);
@@ -551,7 +551,7 @@ public class FileSystemManager {
                 conf.set(FS_OBS_SECRET_KEY, secretKey);
                 conf.set(FS_OBS_ENDPOINT, endpoint);
                 conf.set(FS_OBS_IMPL, "org.apache.hadoop.fs.obs.OBSFileSystem");
-                conf.set(FS_OBS_IMPL_DISABLE_CACHE, disableCache);
+                // conf.set(FS_OBS_IMPL_DISABLE_CACHE, disableCache);
                 FileSystem obsFileSystem = FileSystem.get(pathUri.getUri(), conf);
                 fileSystem.setFileSystem(obsFileSystem);
             }
@@ -580,7 +580,7 @@ public class FileSystemManager {
         String accessKey = properties.getOrDefault(FS_KS3_ACCESS_KEY, "");
         String secretKey = properties.getOrDefault(FS_KS3_SECRET_KEY, "");
         String endpoint = properties.getOrDefault(FS_KS3_ENDPOINT, "");
-        String disableCache = properties.getOrDefault(FS_KS3_IMPL_DISABLE_CACHE, "true");
+        // String disableCache = properties.getOrDefault(FS_KS3_IMPL_DISABLE_CACHE, "true");
         // endpoint is the server host, pathUri.getUri().getHost() is the bucket
         // we should use these two params as the host identity, because FileSystem will cache both.
         String host = KS3_SCHEME + "://" + endpoint + "/" + pathUri.getUri().getHost();
@@ -597,7 +597,7 @@ public class FileSystemManager {
                 conf.set(FS_KS3_SECRET_KEY, secretKey);
                 conf.set(FS_KS3_ENDPOINT, endpoint);
                 conf.set(FS_KS3_IMPL, "com.ksyun.kmr.hadoop.fs.ks3.Ks3FileSystem");
-                conf.set(FS_KS3_IMPL_DISABLE_CACHE, disableCache);
+                // conf.set(FS_KS3_IMPL_DISABLE_CACHE, disableCache);
                 FileSystem ks3FileSystem = FileSystem.get(pathUri.getUri(), conf);
                 fileSystem.setFileSystem(ks3FileSystem);
             }
@@ -621,7 +621,7 @@ public class FileSystemManager {
         String accessKey = properties.getOrDefault(FS_OSS_ACCESS_KEY, "");
         String secretKey = properties.getOrDefault(FS_OSS_SECRET_KEY, "");
         String endpoint = properties.getOrDefault(FS_OSS_ENDPOINT, "");
-        String disableCache = properties.getOrDefault(FS_OSS_IMPL_DISABLE_CACHE, "true");
+        // String disableCache = properties.getOrDefault(FS_OSS_IMPL_DISABLE_CACHE, "true");
         String host = OSS_SCHEME + "://" + endpoint + "/" + pathUri.getUri().getHost();
         String ossUgi = accessKey + "," + secretKey;
         FileSystemIdentity fileSystemIdentity = new FileSystemIdentity(host, ossUgi);
@@ -637,7 +637,7 @@ public class FileSystemManager {
                 conf.set(FS_OSS_SECRET_KEY, secretKey);
                 conf.set(FS_OSS_ENDPOINT, endpoint);
                 conf.set(FS_OSS_IMPL, "org.apache.hadoop.fs.aliyun.oss.AliyunOSSFileSystem");
-                conf.set(FS_OSS_IMPL_DISABLE_CACHE, disableCache);
+                // conf.set(FS_OSS_IMPL_DISABLE_CACHE, disableCache);
                 FileSystem ossFileSystem = FileSystem.get(pathUri.getUri(), conf);
                 fileSystem.setFileSystem(ossFileSystem);
             }
@@ -782,7 +782,7 @@ public class FileSystemManager {
         String accessKey = properties.getOrDefault(FS_COS_ACCESS_KEY, "");
         String secretKey = properties.getOrDefault(FS_COS_SECRET_KEY, "");
         String endpoint = properties.getOrDefault(FS_COS_ENDPOINT, "");
-        String disableCache = properties.getOrDefault(FS_COS_IMPL_DISABLE_CACHE, "true");
+        // String disableCache = properties.getOrDefault(FS_COS_IMPL_DISABLE_CACHE, "true");
         // endpoint is the server host, pathUri.getUri().getHost() is the bucket
         // we should use these two params as the host identity, because FileSystem will cache both.
         String host = COS_SCHEME + "://" + endpoint + "/" + pathUri.getUri().getHost();
@@ -799,7 +799,7 @@ public class FileSystemManager {
                 conf.set(FS_COS_SECRET_KEY, secretKey);
                 conf.set(FS_COS_ENDPOINT, endpoint);
                 conf.set(FS_COS_IMPL, "org.apache.hadoop.fs.CosFileSystem");
-                conf.set(FS_COS_IMPL_DISABLE_CACHE, disableCache);
+                // conf.set(FS_COS_IMPL_DISABLE_CACHE, disableCache);
                 FileSystem cosFileSystem = FileSystem.get(pathUri.getUri(), conf);
                 fileSystem.setFileSystem(cosFileSystem);
             }
