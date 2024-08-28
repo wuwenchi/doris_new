@@ -77,7 +77,7 @@ public class RefreshManager {
         String catalogName = catalog.getName();
         if (!catalogName.equals(InternalCatalog.INTERNAL_CATALOG_NAME)) {
             ((ExternalCatalog) catalog).onRefreshCache(invalidCache);
-            LOG.info("refresh catalog {} with invalidCache {}", catalogName, invalidCache);
+            // LOG.info("refresh catalog {} with invalidCache {}", catalogName, invalidCache);
         }
     }
 
@@ -212,7 +212,7 @@ public class RefreshManager {
         if (table instanceof HMSExternalTable && updateTime > 0) {
             ((HMSExternalTable) table).setEventUpdateTime(updateTime);
         }
-        LOG.info("refresh table {} from db {} in catalog {}", table.getName(), db.getFullName(), catalog.getName());
+        // LOG.info("refresh table {} from db {} in catalog {}", table.getName(), db.getFullName(), catalog.getName());
     }
 
     // Refresh partition

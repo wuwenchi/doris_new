@@ -106,6 +106,7 @@ public abstract class BaseExternalTableInsertExecutor extends AbstractInsertExec
             transactionManager.commit(txnId);
             summaryProfile.ifPresent(SummaryProfile::setTransactionEndTime);
             txnStatus = TransactionStatus.COMMITTED;
+            // LOG.info("mmc refresh table begin:");
             Env.getCurrentEnv().getRefreshManager().refreshTable(
                     catalogName,
                     table.getDatabase().getFullName(),

@@ -98,10 +98,10 @@ public class ExternalMetaCacheMgr {
                 Config.max_external_cache_loader_thread_pool_size * 1000,
                 "RowCountRefreshExecutor", 0, true);
 
-        commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPool(
+        commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPoolWithDiscardPolicy(
                 Config.max_external_cache_loader_thread_pool_size,
                 Config.max_external_cache_loader_thread_pool_size * 1000,
-                "CommonRefreshExecutor", 10, true);
+                "CommonRefreshExecutor", true);
 
         // The queue size should be large enough,
         // because there may be thousands of partitions being queried at the same time.
@@ -129,6 +129,10 @@ public class ExternalMetaCacheMgr {
 
     public ExecutorService getScheduleExecutor() {
         return scheduleExecutor;
+    }
+
+    public ExecutorService getCommonRefreshExecutor() {
+        return commonRefreshExecutor;
     }
 
     public HiveMetaStoreCache getMetaStoreCache(HMSExternalCatalog catalog) {
@@ -191,6 +195,7 @@ public class ExternalMetaCacheMgr {
     }
 
     public void invalidateTableCache(long catalogId, String dbName, String tblName) {
+        // LOG.info("mmc start to invalidate meta cache: " + catalogId + ", " + dbName + ", " + tblName);
         dbName = ClusterNamespace.getNameFromFullName(dbName);
         ExternalSchemaCache schemaCache = schemaCacheMap.get(catalogId);
         if (schemaCache != null) {
@@ -199,6 +204,8 @@ public class ExternalMetaCacheMgr {
         HiveMetaStoreCache metaCache = cacheMap.get(catalogId);
         if (metaCache != null) {
             metaCache.invalidateTableCache(dbName, tblName);
+        } else {
+            // LOG.info("mmc error find meta cache: " + catalogId + ", " + dbName + ", " + tblName);
         }
         hudiPartitionMgr.cleanTablePartitions(catalogId, dbName, tblName);
         icebergMetadataCacheMgr.invalidateTableCache(catalogId, dbName, tblName);
@@ -233,7 +240,10 @@ public class ExternalMetaCacheMgr {
         }
         HiveMetaStoreCache metaCache = cacheMap.get(catalogId);
         if (metaCache != null) {
+            LOG.info("mmc refresh catalog: " + catalogId);
             metaCache.invalidateAll();
+        } else {
+            // LOG.info("mmc error refresh catalog: " + catalogId);
         }
         hudiPartitionMgr.cleanPartitionProcess(catalogId);
         icebergMetadataCacheMgr.invalidateCatalogCache(catalogId);

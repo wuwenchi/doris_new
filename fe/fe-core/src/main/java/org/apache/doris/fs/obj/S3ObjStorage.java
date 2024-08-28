@@ -196,7 +196,7 @@ public class S3ObjStorage implements ObjStorage<S3Client> {
                     getClient()
                             .deleteObject(
                                     DeleteObjectRequest.builder().bucket(uri.getBucket()).key(uri.getKey()).build());
-            LOG.info("delete file " + remotePath + " success: " + response.toString());
+            // LOG.info("delete file " + remotePath + " success: " + response.toString());
             return Status.OK;
         } catch (S3Exception e) {
             LOG.warn("delete file failed: ", e);

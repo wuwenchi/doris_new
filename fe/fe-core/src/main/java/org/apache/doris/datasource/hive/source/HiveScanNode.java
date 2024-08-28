@@ -153,6 +153,7 @@ public class HiveScanNode extends FileQueryScanNode {
             if (!isPartitionPruned) {
                 // partitionItems is null means that the partition is not pruned by Nereids,
                 // so need to prune partitions here by legacy ListPartitionPrunerV2.
+                // LOG.info("mmc hivescannode start to get partition values: " + hmsTable.getDbName() + ", " + hmsTable.getName());
                 HiveMetaStoreCache.HivePartitionValues hivePartitionValues = cache.getPartitionValues(
                         hmsTable.getDbName(), hmsTable.getName(), partitionColumnTypes);
                 Map<Long, PartitionItem> idToPartitionItem = hivePartitionValues.getIdToPartitionItem();
@@ -230,6 +231,7 @@ public class HiveScanNode extends FileQueryScanNode {
                         allFiles.size(), hmsTable.getDbName(), hmsTable.getName(),
                         (System.currentTimeMillis() - start));
             }
+            // LOG.info("mmc get " + allFiles);
             return allFiles;
         } catch (Throwable t) {
             LOG.warn("get file split failed for table: {}", hmsTable.getName(), t);

@@ -158,6 +158,7 @@ public class HMSTransaction implements Transaction {
                 old.getFileNames().addAll(pu.getFileNames());
             } else {
                 mm.put(pu.getName(), pu);
+                // LOG.info("mmc add " + pu.getFileNames() + " partition: " + pu.getName());
             }
         }
         return new ArrayList<>(mm.values());
@@ -1491,6 +1492,7 @@ public class HMSTransaction implements Transaction {
         });
 
         Status status = fs.delete(remotePath);
+        // LOG.info("mmc delete " + remotePath);
 
         summaryProfile.ifPresent(SummaryProfile::freshFilesystemOptTime);
         return status;

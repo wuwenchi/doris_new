@@ -141,6 +141,13 @@ public class ThreadPoolManager {
                 poolName, needRegisterMetric);
     }
 
+    public static ThreadPoolExecutor newDaemonFixedThreadPoolWithDiscardPolicy(int numThread, int queueSize,
+            String poolName, boolean needRegisterMetric) {
+        return newDaemonThreadPool(numThread, numThread, KEEP_ALIVE_TIME, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueSize), new LogDiscardPolicy(poolName),
+                poolName, needRegisterMetric);
+    }
+
     public static ThreadPoolExecutor newDaemonFixedThreadPool(int numThread, int queueSize,
                                                               String poolName,
                                                               boolean needRegisterMetric,
@@ -302,7 +309,9 @@ public class ThreadPoolManager {
 
         @Override
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-            LOG.warn("Task " + r.toString() + " rejected from " + threadPoolName + " " + executor.toString());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Task " + r.toString() + " rejected from " + threadPoolName + " " + executor.toString());
+            }
             this.rejectedNum.incrementAndGet();
         }
     }

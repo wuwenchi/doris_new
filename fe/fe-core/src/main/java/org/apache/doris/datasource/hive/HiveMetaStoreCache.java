@@ -90,9 +90,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -200,7 +203,9 @@ public class HiveMetaStoreCache {
 
         LoadingCache<FileCacheKey, FileCacheValue> oldFileCache = fileCacheRef.get();
 
-        fileCacheRef.set(fileCacheFactory.buildCache(loader, null, this.refreshExecutor));
+        fileCacheRef.set(fileCacheFactory.buildCache(loader, (k,v,c) -> {
+            // LOG.info("mmc delete fileCache k: " + k.getPartitionValues() + ", " + k.getLocation() + ", v:" + v.getFiles());
+        }, this.refreshExecutor));
         if (Objects.nonNull(oldFileCache)) {
             oldFileCache.invalidateAll();
         }
@@ -245,6 +250,7 @@ public class HiveMetaStoreCache {
     private HivePartitionValues loadPartitionValues(PartitionValueCacheKey key) {
         // partition name format: nation=cn/city=beijing
         List<String> partitionNames = catalog.getClient().listPartitionNames(key.dbName, key.tblName);
+        // LOG.info("mmc load partition values: " + partitionNames);
         if (LOG.isDebugEnabled()) {
             LOG.debug("load #{} partitions for {} in catalog {}", partitionNames.size(), key, catalog.getName());
         }
@@ -304,6 +310,7 @@ public class HiveMetaStoreCache {
             LOG.debug("load partition format: {}, location: {} for {} in catalog {}",
                     sd.getInputFormat(), sd.getLocation(), key, catalog.getName());
         }
+        // LOG.info("mmc load partition : " + sd.getLocation());
         // TODO: more info?
         return new HivePartition(key.dbName, key.tblName, false, sd.getInputFormat(), sd.getLocation(), key.values,
                 partition.getParameters());
@@ -337,6 +344,7 @@ public class HiveMetaStoreCache {
         // Compose the return result map.
         for (Partition partition : partitions) {
             StorageDescriptor sd = partition.getSd();
+            // LOG.info("mmc load partitions: " + sd.getLocation());
             ret.put(new PartitionCacheKey(dbName, tblName, partition.getValues()),
                     new HivePartition(dbName, tblName, false,
                             sd.getInputFormat(), sd.getLocation(), partition.getValues(), partition.getParameters()));
@@ -381,6 +389,7 @@ public class HiveMetaStoreCache {
         }
         // Must copy the partitionValues to avoid concurrent modification of key and value
         result.setPartitionValues(Lists.newArrayList(partitionValues));
+        // LOG.info("mmc file list: " + result.getFiles());
         return result;
     }
 
@@ -478,9 +487,8 @@ public class HiveMetaStoreCache {
                                                      String bindBrokerName) {
         long start = System.currentTimeMillis();
         List<FileCacheKey> keys = partitions.stream().map(p -> p.isDummyPartition()
-                ? FileCacheKey.createDummyCacheKey(
-                        p.getDbName(), p.getTblName(), p.getPath(), p.getInputFormat(), bindBrokerName)
-                : new FileCacheKey(p.getPath(), p.getInputFormat(), p.getPartitionValues(), bindBrokerName))
+                ? FileCacheKey.createDummyCacheKey(p.getDbName(), p.getTblName(), p.getPath(), p.getInputFormat(), bindBrokerName)
+                : new FileCacheKey(p.getDbName(), p.getTblName(), p.getPath(), p.getInputFormat(), p.getPartitionValues(), bindBrokerName))
                 .collect(Collectors.toList());
 
         List<FileCacheValue> fileLists;
@@ -548,38 +556,74 @@ public class HiveMetaStoreCache {
     }
 
     public void invalidateTableCache(String dbName, String tblName) {
-        PartitionValueCacheKey key = new PartitionValueCacheKey(dbName, tblName, null);
-        HivePartitionValues partitionValues = partitionValuesCache.getIfPresent(key);
-        if (partitionValues != null) {
-            long start = System.currentTimeMillis();
-            for (List<String> values : partitionValues.partitionValuesMap.values()) {
-                PartitionCacheKey partKey = new PartitionCacheKey(dbName, tblName, values);
-                HivePartition partition = partitionCache.getIfPresent(partKey);
-                if (partition != null) {
-                    fileCacheRef.get().invalidate(new FileCacheKey(partition.getPath(),
-                            null, partition.getPartitionValues(), null));
-                    partitionCache.invalidate(partKey);
-                }
+        LOG.info("mmc invalidateTableCache {}.{}", dbName, tblName);
+        long t1 = System.currentTimeMillis();
+        partitionValuesCache.invalidate(new PartitionValueCacheKey(dbName, tblName, null));
+        long t2 = System.currentTimeMillis();
+        LOG.info("mmc invalidateTableCache values:{}, table:{}.{}", (t2-t1), dbName, tblName);
+        partitionCache.asMap().keySet().forEach(k -> {
+            if (k.isSameTable(dbName, tblName)) {
+                partitionCache.invalidate(k);
             }
-            partitionValuesCache.invalidate(key);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("invalid table cache for {}.{} in catalog {}, cache num: {}, cost: {} ms",
-                        dbName, tblName, catalog.getName(), partitionValues.partitionValuesMap.size(),
-                        (System.currentTimeMillis() - start));
+        });
+        long t3 = System.currentTimeMillis();
+        long id = Util.genIdByName(dbName, tblName);
+        LOG.info("mmc invalidateTableCache partition:{}, table:{}.{}", (t3-t2), dbName, tblName);
+        LoadingCache<FileCacheKey, FileCacheValue> fileCache = fileCacheRef.get();
+        fileCache.asMap().keySet().forEach(k -> {
+            if (k.isSameTable(id)) {
+                fileCache.invalidate(k);
             }
-        } else {
-            /**
-             * A file cache entry can be created reference to
-             * {@link org.apache.doris.planner.external.HiveSplitter#getSplits},
-             * so we need to invalidate it if this is a non-partitioned table.
-             * We use {@link org.apache.doris.datasource.hive.HiveMetaStoreCache.FileCacheKey#createDummyCacheKey}
-             * to avoid invocation by Hms Client, because this method may be invoked when salve FE replay journal logs,
-             * and FE will exit if some network problems occur.
-             * */
-            FileCacheKey fileCacheKey = FileCacheKey.createDummyCacheKey(
-                    dbName, tblName, null, null, null);
-            fileCacheRef.get().invalidate(fileCacheKey);
-        }
+        });
+        long t4 = System.currentTimeMillis();
+        LOG.info("mmc invalidateTableCache file:{}, table:{}.{}", (t4-t3), dbName, tblName);
+
+        // PartitionValueCacheKey key = new PartitionValueCacheKey(dbName, tblName, null);
+        // HivePartitionValues partitionValues = partitionValuesCache.getIfPresent(key);
+        // if (partitionValues != null) {
+        //     // LOG.info("mmc invalidate partitioned table: " + tblName);
+        //     long start = System.currentTimeMillis();
+        //     for (List<String> values : partitionValues.partitionValuesMap.values()) {
+        //         PartitionCacheKey partKey = new PartitionCacheKey(dbName, tblName, values);
+        //         HivePartition partition = partitionCache.getIfPresent(partKey);
+        //         if (partition != null) {
+        //             fileCacheRef.get().invalidate(new FileCacheKey(dbName, tblName, partition.getPath(),
+        //                     null, partition.getPartitionValues(), null));
+        //             partitionCache.invalidate(partKey);
+        //             // LOG.info("mmc refresh cache, " + "db:" + dbName + ", tb:" + tblName + ", values:" + values);
+        //         } else {
+        //             // LOG.info("mmc wrong cache, " + "db:" + dbName + ", tb:" + tblName + ", values:" + values);
+        //         }
+        //     }
+        //     ConcurrentMap<@NonNull FileCacheKey, @NonNull FileCacheValue> fileCacheKeyFileCacheValueConcurrentMap
+        //             = fileCacheRef.get().asMap();
+        //     fileCacheKeyFileCacheValueConcurrentMap.forEach((k,v) -> {
+        //         // LOG.info("mmc file cache now1: " + k.getLocation() + ", " + k.getPartitionValues());
+        //     });
+        //     partitionValuesCache.invalidate(key);
+        //     if (LOG.isDebugEnabled()) {
+        //         LOG.debug("invalid table cache for {}.{} in catalog {}, cache num: {}, cost: {} ms",
+        //                 dbName, tblName, catalog.getName(), partitionValues.partitionValuesMap.size(),
+        //                 (System.currentTimeMillis() - start));
+        //     }
+        // } else {
+        //     /**
+        //      * A file cache entry can be created reference to
+        //      * {@link org.apache.doris.planner.external.HiveSplitter#getSplits},
+        //      * so we need to invalidate it if this is a non-partitioned table.
+        //      * We use {@link org.apache.doris.datasource.hive.HiveMetaStoreCache.FileCacheKey#createDummyCacheKey}
+        //      * to avoid invocation by Hms Client, because this method may be invoked when salve FE replay journal logs,
+        //      * and FE will exit if some network problems occur.
+        //      * */
+        //     FileCacheKey fileCacheKey = FileCacheKey.createDummyCacheKey(dbName, tblName, null, null, null);
+        //     fileCacheRef.get().invalidate(fileCacheKey);
+        //     // LOG.info("mmc invalidate unpartitioned table: " + tblName);
+        //     ConcurrentMap<@NonNull FileCacheKey, @NonNull FileCacheValue> fileCacheKeyFileCacheValueConcurrentMap
+        //             = fileCacheRef.get().asMap();
+        //     fileCacheKeyFileCacheValueConcurrentMap.forEach((k,v) -> {
+        //         // LOG.info("mmc file cache now2: " + k.getLocation() + ", " + k.getPartitionValues());
+        //     });
+        // }
     }
 
     public void invalidatePartitionCache(String dbName, String tblName, String partitionName) {
@@ -591,7 +635,7 @@ public class HiveMetaStoreCache {
             PartitionCacheKey partKey = new PartitionCacheKey(dbName, tblName, values);
             HivePartition partition = partitionCache.getIfPresent(partKey);
             if (partition != null) {
-                fileCacheRef.get().invalidate(new FileCacheKey(partition.getPath(),
+                fileCacheRef.get().invalidate(new FileCacheKey(dbName, tblName, partition.getPath(),
                         null, partition.getPartitionValues(), null));
                 partitionCache.invalidate(partKey);
             }
@@ -613,9 +657,24 @@ public class HiveMetaStoreCache {
     }
 
     public void invalidateAll() {
+        ThreadPoolExecutor commonRefreshExecutor = (ThreadPoolExecutor) Env.getCurrentEnv().getExtMetaCacheMgr().getCommonRefreshExecutor();
+        BlockingQueue<Runnable> queue = commonRefreshExecutor.getQueue();
+        LOG.info("mmc CommonRefreshExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
+                queue.size(),
+                queue.remainingCapacity(),
+                commonRefreshExecutor.getCompletedTaskCount(),
+                commonRefreshExecutor.getTaskCount()
+        );
+        long l1 = System.currentTimeMillis();
         partitionValuesCache.invalidateAll();
+        long l2 = System.currentTimeMillis();
+        LOG.info("mmc invalidateAll values : " + (l2 - l1));
         partitionCache.invalidateAll();
+        long l3 = System.currentTimeMillis();
+        LOG.info("mmc invalidateAll partition: " + (l3 - l2));
         fileCacheRef.get().invalidateAll();
+        long l4 = System.currentTimeMillis();
+        LOG.info("mmc invalidateAll file: " + (l4 - l3));
         if (LOG.isDebugEnabled()) {
             LOG.debug("invalid all meta cache in catalog {}", catalog.getName());
         }
@@ -920,6 +979,10 @@ public class HiveMetaStoreCache {
                     && Objects.equals(values, ((PartitionCacheKey) obj).values);
         }
 
+        boolean isSameTable(String dbName, String tblName) {
+            return this.dbName.equals(dbName) && this.tblName.equals(tblName);
+        }
+
         @Override
         public int hashCode() {
             return Objects.hash(dbName, tblName, values);
@@ -944,18 +1007,20 @@ public class HiveMetaStoreCache {
         // e.g for file : hdfs://path/to/table/part1=a/part2=b/datafile
         // partitionValues would be ["part1", "part2"]
         protected List<String> partitionValues;
+        private long id;
 
-        public FileCacheKey(String location, String inputFormat, List<String> partitionValues, String bindBrokerName) {
+        public FileCacheKey(String dbName, String tblName, String location, String inputFormat, List<String> partitionValues, String bindBrokerName) {
             this.location = location;
             this.inputFormat = inputFormat;
             this.partitionValues = partitionValues == null ? Lists.newArrayList() : partitionValues;
             this.bindBrokerName = bindBrokerName;
+            this.id = Util.genIdByName(dbName, tblName);
         }
 
         public static FileCacheKey createDummyCacheKey(String dbName, String tblName, String location,
-                                                       String inputFormat,
-                                                       String bindBrokerName) {
-            FileCacheKey fileCacheKey = new FileCacheKey(location, inputFormat, null, bindBrokerName);
+                String inputFormat,
+                String bindBrokerName) {
+            FileCacheKey fileCacheKey = new FileCacheKey(dbName, tblName, location, inputFormat, null, bindBrokerName);
             fileCacheKey.dummyKey = dbName + "." + tblName;
             return fileCacheKey;
         }
@@ -972,7 +1037,11 @@ public class HiveMetaStoreCache {
                 return dummyKey.equals(((FileCacheKey) obj).dummyKey);
             }
             return location.equals(((FileCacheKey) obj).location)
-                && Objects.equals(partitionValues, ((FileCacheKey) obj).partitionValues);
+                    && Objects.equals(partitionValues, ((FileCacheKey) obj).partitionValues);
+        }
+
+        boolean isSameTable(long id) {
+            return this.id == id;
         }
 
         @Override
@@ -988,7 +1057,6 @@ public class HiveMetaStoreCache {
             return "FileCacheKey{" + "location='" + location + '\'' + ", inputFormat='" + inputFormat + '\'' + '}';
         }
     }
-
     @Data
     public static class FileCacheValue {
         // File Cache for self splitter.
