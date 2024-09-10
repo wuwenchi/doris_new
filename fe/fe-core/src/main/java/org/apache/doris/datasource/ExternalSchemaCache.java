@@ -59,7 +59,7 @@ public class ExternalSchemaCache {
                 false,
                 null);
         schemaCache = schemaCacheeFactory.buildCache(
-                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                new CacheLoaderWithBatchRefresh<SchemaCacheKey, Optional<SchemaCacheValue>>(Config.max_external_cache_loader_thread_pool_size) {
                     @Override
                     public Optional<SchemaCacheValue> load(SchemaCacheKey key) throws Exception {
                         return loadSchema(key);

@@ -64,7 +64,7 @@ public class IcebergMetadataCache {
                 false,
                 null);
         this.snapshotListCache = snapshotListCacheFactory.buildCache(
-                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                new CacheLoaderWithBatchRefresh<IcebergMetadataCacheKey, List<Snapshot>>(Config.max_external_cache_loader_thread_pool_size) {
                     @Override
                     public List<Snapshot> load(IcebergMetadataCacheKey key) throws Exception {
                         return loadSnapshots(key);
@@ -78,7 +78,7 @@ public class IcebergMetadataCache {
                 false,
                 null);
         this.tableCache = tableCacheFactory.buildCache(
-                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                new CacheLoaderWithBatchRefresh<IcebergMetadataCacheKey, Table>(Config.max_external_cache_loader_thread_pool_size) {
                     @Override
                     public Table load(IcebergMetadataCacheKey key) throws Exception {
                         return loadTable(key);

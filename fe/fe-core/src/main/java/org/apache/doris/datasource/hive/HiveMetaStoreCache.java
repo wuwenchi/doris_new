@@ -151,7 +151,7 @@ public class HiveMetaStoreCache {
                 null);
 
         partitionValuesCache = partitionValuesCacheFactory.buildCache(
-                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                new CacheLoaderWithBatchRefresh<PartitionValueCacheKey, HivePartitionValues>(Config.max_external_cache_loader_thread_pool_size) {
                     @Override
                     public HivePartitionValues load(PartitionValueCacheKey key) throws Exception {
                         return loadPartitionValues(key);
@@ -167,7 +167,7 @@ public class HiveMetaStoreCache {
                 false,
                 null);
         partitionCache = partitionCacheFactory.buildCache(
-                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                new CacheLoaderWithBatchRefresh<PartitionCacheKey, HivePartition>(Config.max_external_cache_loader_thread_pool_size) {
                     @Override
                     public HivePartition load(PartitionCacheKey key) throws Exception {
                         return loadPartition(key);
