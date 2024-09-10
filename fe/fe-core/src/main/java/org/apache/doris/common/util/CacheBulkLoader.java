@@ -19,7 +19,6 @@ package org.apache.doris.common.util;
 
 import org.apache.doris.common.Pair;
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
@@ -31,7 +30,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-public abstract class CacheBulkLoader<K, V> implements CacheLoader<K, V> {
+public abstract class CacheBulkLoader<K, V> extends CacheLoaderWithBatchRefresh<K, V> {
+
+    public CacheBulkLoader(int cnt) {
+        super(cnt);
+    }
 
     protected abstract ExecutorService getExecutor();
 

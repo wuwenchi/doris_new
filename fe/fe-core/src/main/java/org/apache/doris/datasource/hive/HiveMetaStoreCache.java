@@ -33,6 +33,7 @@ import org.apache.doris.common.FeConstants;
 import org.apache.doris.common.UserException;
 import org.apache.doris.common.security.authentication.AuthenticationConfig;
 import org.apache.doris.common.util.CacheBulkLoader;
+import org.apache.doris.common.util.CacheLoaderWithBatchRefresh;
 import org.apache.doris.common.util.LocationPath;
 import org.apache.doris.common.util.Util;
 import org.apache.doris.datasource.CacheException;
@@ -79,6 +80,9 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
@@ -91,7 +95,6 @@ import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -146,7 +149,15 @@ public class HiveMetaStoreCache {
                 Config.max_hive_partition_table_cache_num,
                 false,
                 null);
-        partitionValuesCache = partitionValuesCacheFactory.buildCache(key -> loadPartitionValues(key), null,
+
+        partitionValuesCache = partitionValuesCacheFactory.buildCache(
+                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                    @Override
+                    public HivePartitionValues load(PartitionValueCacheKey key) throws Exception {
+                        return loadPartitionValues(key);
+                    }
+                },
+                null,
                 refreshExecutor);
 
         CacheFactory partitionCacheFactory = new CacheFactory(
@@ -155,17 +166,20 @@ public class HiveMetaStoreCache {
                 Config.max_hive_partition_cache_num,
                 false,
                 null);
-        partitionCache = partitionCacheFactory.buildCache(new CacheLoader<PartitionCacheKey, HivePartition>() {
-            @Override
-            public HivePartition load(PartitionCacheKey key) {
-                return loadPartition(key);
-            }
+        partitionCache = partitionCacheFactory.buildCache(
+                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                    @Override
+                    public HivePartition load(PartitionCacheKey key) throws Exception {
+                        return loadPartition(key);
+                    }
 
-            @Override
-            public Map<PartitionCacheKey, HivePartition> loadAll(Iterable<? extends PartitionCacheKey> keys) {
-                return loadPartitions(keys);
-            }
-        }, null, refreshExecutor);
+                    @Override
+                    public Map<PartitionCacheKey, HivePartition> loadAll(Iterable<? extends PartitionCacheKey> keys) {
+                        return loadPartitions(keys);
+                    }
+                },
+
+null, refreshExecutor);
 
         setNewFileCache();
     }
@@ -189,7 +203,7 @@ public class HiveMetaStoreCache {
                 false,
                 null);
 
-        CacheLoader<FileCacheKey, FileCacheValue> loader = new CacheBulkLoader<FileCacheKey, FileCacheValue>() {
+        CacheLoader<FileCacheKey, FileCacheValue> loader = new CacheBulkLoader<>(Config.max_external_cache_loader_thread_pool_size) {
             @Override
             protected ExecutorService getExecutor() {
                 return HiveMetaStoreCache.this.fileListingExecutor;

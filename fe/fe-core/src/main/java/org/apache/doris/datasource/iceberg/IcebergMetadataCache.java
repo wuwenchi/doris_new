@@ -21,8 +21,11 @@ import org.apache.doris.catalog.Env;
 import org.apache.doris.common.CacheFactory;
 import org.apache.doris.common.Config;
 import org.apache.doris.common.UserException;
+import org.apache.doris.common.util.CacheLoaderWithBatchRefresh;
 import org.apache.doris.datasource.CatalogIf;
 import org.apache.doris.datasource.hive.HMSExternalCatalog;
+import org.apache.doris.datasource.hive.HiveMetaStoreCache.HivePartitionValues;
+import org.apache.doris.datasource.hive.HiveMetaStoreCache.PartitionValueCacheKey;
 import org.apache.doris.datasource.hive.HiveMetaStoreClientHelper;
 import org.apache.doris.datasource.property.constants.HMSProperties;
 import org.apache.doris.fs.remote.dfs.DFSFileSystem;
@@ -60,7 +63,13 @@ public class IcebergMetadataCache {
                 Config.max_external_table_cache_num,
                 false,
                 null);
-        this.snapshotListCache = snapshotListCacheFactory.buildCache(key -> loadSnapshots(key), null, executor);
+        this.snapshotListCache = snapshotListCacheFactory.buildCache(
+                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                    @Override
+                    public List<Snapshot> load(IcebergMetadataCacheKey key) throws Exception {
+                        return loadSnapshots(key);
+                    }
+                }, null, executor);
 
         CacheFactory tableCacheFactory = new CacheFactory(
                 OptionalLong.of(28800L),
@@ -68,7 +77,13 @@ public class IcebergMetadataCache {
                 Config.max_external_table_cache_num,
                 false,
                 null);
-        this.tableCache = tableCacheFactory.buildCache(key -> loadTable(key), null, executor);
+        this.tableCache = tableCacheFactory.buildCache(
+                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                    @Override
+                    public Table load(IcebergMetadataCacheKey key) throws Exception {
+                        return loadTable(key);
+                    }
+                }, null, executor);
     }
 
     public List<Snapshot> getSnapshotList(TIcebergMetadataParams params) throws UserException {

@@ -98,9 +98,9 @@ public class ExternalMetaCacheMgr {
                 Config.max_external_cache_loader_thread_pool_size * 1000,
                 "RowCountRefreshExecutor", 0, true);
 
-        commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPoolWithDiscardPolicy(
+        commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPoolWithCallerRunPolicy(
                 Config.max_external_cache_loader_thread_pool_size,
-                Config.max_external_cache_loader_thread_pool_size * 1000,
+                Config.max_external_cache_loader_thread_pool_size * 10000,
                 "CommonRefreshExecutor", true);
 
         // The queue size should be large enough,

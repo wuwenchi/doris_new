@@ -148,6 +148,13 @@ public class ThreadPoolManager {
                 poolName, needRegisterMetric);
     }
 
+    public static ThreadPoolExecutor newDaemonFixedThreadPoolWithCallerRunPolicy(int numThread, int queueSize,
+            String poolName, boolean needRegisterMetric) {
+        return newDaemonThreadPool(numThread, numThread, KEEP_ALIVE_TIME, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueSize), new ThreadPoolExecutor.CallerRunsPolicy(),
+                poolName, needRegisterMetric);
+    }
+
     public static ThreadPoolExecutor newDaemonFixedThreadPool(int numThread, int queueSize,
                                                               String poolName,
                                                               boolean needRegisterMetric,

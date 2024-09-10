@@ -20,6 +20,7 @@ package org.apache.doris.datasource;
 import org.apache.doris.catalog.Column;
 import org.apache.doris.common.CacheFactory;
 import org.apache.doris.common.Config;
+import org.apache.doris.common.util.CacheLoaderWithBatchRefresh;
 import org.apache.doris.metric.GaugeMetric;
 import org.apache.doris.metric.Metric;
 import org.apache.doris.metric.MetricLabel;
@@ -57,7 +58,13 @@ public class ExternalSchemaCache {
                 Config.max_external_schema_cache_num,
                 false,
                 null);
-        schemaCache = schemaCacheeFactory.buildCache(key -> loadSchema(key), null, executor);
+        schemaCache = schemaCacheeFactory.buildCache(
+                new CacheLoaderWithBatchRefresh<>(Config.max_external_cache_loader_thread_pool_size) {
+                    @Override
+                    public Optional<SchemaCacheValue> load(SchemaCacheKey key) throws Exception {
+                        return loadSchema(key);
+                    }
+                }, null, executor);
     }
 
     private void initMetrics() {

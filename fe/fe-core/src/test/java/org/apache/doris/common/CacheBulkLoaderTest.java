@@ -42,7 +42,7 @@ public class CacheBulkLoaderTest {
 
         LoadingCache<String, String> testCache = Caffeine.newBuilder().maximumSize(100)
                 .expireAfterAccess(1, TimeUnit.MINUTES)
-                .build(new CacheBulkLoader<String, String>() {
+                .build(new CacheBulkLoader<String, String>(100) {
                     @Override
                     protected ExecutorService getExecutor() {
                         return executor;
