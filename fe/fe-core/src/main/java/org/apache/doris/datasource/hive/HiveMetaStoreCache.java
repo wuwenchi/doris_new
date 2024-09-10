@@ -203,7 +203,7 @@ null, refreshExecutor);
                 false,
                 null);
 
-        CacheLoader<FileCacheKey, FileCacheValue> loader = new CacheBulkLoader<>(Config.max_external_cache_loader_thread_pool_size) {
+        CacheLoader<FileCacheKey, FileCacheValue> loader = new CacheBulkLoader<FileCacheKey, FileCacheValue>(Config.max_external_cache_loader_thread_pool_size) {
             @Override
             protected ExecutorService getExecutor() {
                 return HiveMetaStoreCache.this.fileListingExecutor;
