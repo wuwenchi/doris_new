@@ -17,6 +17,7 @@
 
 package org.apache.doris.datasource;
 
+import org.apache.doris.catalog.Env;
 import org.apache.doris.catalog.Type;
 import org.apache.doris.cluster.ClusterNamespace;
 import org.apache.doris.common.Config;
@@ -40,11 +41,14 @@ import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Cache meta of external catalog
@@ -98,10 +102,30 @@ public class ExternalMetaCacheMgr {
                 Config.max_external_cache_loader_thread_pool_size * 1000,
                 "RowCountRefreshExecutor", 0, true);
 
-        commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPoolWithDiscardPolicy(
+        commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPool(
                 Config.max_external_cache_loader_thread_pool_size,
                 Config.max_external_cache_loader_thread_pool_size * 1000,
-                "CommonRefreshExecutor", true);
+                "CommonRefreshExecutor", 10, true);
+
+        if (!Env.isCheckpointThread()) {
+            new Thread(() -> {
+                ThreadPoolExecutor executor = (ThreadPoolExecutor) commonRefreshExecutor;
+                while (true) {
+                    BlockingQueue<Runnable> queue = executor.getQueue();
+                    LOG.info("mmc CommonRefreshExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
+                            queue.size(),
+                            queue.remainingCapacity(),
+                            executor.getCompletedTaskCount(),
+                            executor.getTaskCount()
+                    );
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }).start();
+        }
 
         // The queue size should be large enough,
         // because there may be thousands of partitions being queried at the same time.

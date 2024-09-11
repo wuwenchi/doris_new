@@ -124,6 +124,7 @@ public class HiveMetaStoreCache {
     // Other thread may reset this cache, so use AtomicReference to wrap it.
     private volatile AtomicReference<LoadingCache<FileCacheKey, FileCacheValue>> fileCacheRef
             = new AtomicReference<>();
+    private static final int BATCH_LOAD_CNT = Config.max_external_cache_loader_thread_pool_size;
 
     public HiveMetaStoreCache(HMSExternalCatalog catalog,
             ExecutorService refreshExecutor, ExecutorService fileListingExecutor) {
@@ -151,8 +152,10 @@ public class HiveMetaStoreCache {
 
         CacheFactory partitionCacheFactory = new CacheFactory(
                 OptionalLong.of(28800L),
-                OptionalLong.of(Config.external_cache_expire_time_minutes_after_access * 60L),
-                Config.max_hive_partition_cache_num,
+                // OptionalLong.of(Config.external_cache_expire_time_minutes_after_access * 60L),
+                // Config.max_hive_partition_cache_num,
+                OptionalLong.of(2* 60L),
+                120000,
                 false,
                 null);
         partitionCache = partitionCacheFactory.buildCache(new CacheLoader<PartitionCacheKey, HivePartition>() {
@@ -184,8 +187,10 @@ public class HiveMetaStoreCache {
         CacheFactory fileCacheFactory = new CacheFactory(
                 OptionalLong.of(fileMetaCacheTtlSecond >= HMSExternalCatalog.FILE_META_CACHE_TTL_DISABLE_CACHE
                         ? fileMetaCacheTtlSecond : 28800L),
-                OptionalLong.of(Config.external_cache_expire_time_minutes_after_access * 60L),
-                Config.max_external_file_cache_num,
+                // OptionalLong.of(Config.external_cache_expire_time_minutes_after_access * 60L),
+                // Config.max_external_file_cache_num,
+                OptionalLong.of(2* 60L),
+                120000,
                 false,
                 null);
 
@@ -491,10 +496,12 @@ public class HiveMetaStoreCache {
                 : new FileCacheKey(p.getDbName(), p.getTblName(), p.getPath(), p.getInputFormat(), p.getPartitionValues(), bindBrokerName))
                 .collect(Collectors.toList());
 
-        List<FileCacheValue> fileLists;
+        List<FileCacheValue> fileLists = new ArrayList<>();
         try {
             if (withCache) {
-                fileLists = new ArrayList<>(fileCacheRef.get().getAll(keys).values());
+                for (List<FileCacheKey> partialKeys : Lists.partition(keys, BATCH_LOAD_CNT)) {
+                    fileLists.addAll(fileCacheRef.get().getAll(partialKeys).values().stream().toList());
+                }
             } else {
                 if (concurrent) {
                     List<Future<FileCacheValue>> pList = keys.stream().map(
@@ -540,9 +547,11 @@ public class HiveMetaStoreCache {
                 .map(p -> new PartitionCacheKey(dbName, name, p))
                 .collect(Collectors.toList());
 
-        List<HivePartition> partitions;
+        List<HivePartition> partitions = new ArrayList<>();
         if (withCache) {
-            partitions = partitionCache.getAll(keys).values().stream().collect(Collectors.toList());
+            for (List<PartitionCacheKey> partialKeys : Lists.partition(keys, BATCH_LOAD_CNT)) {
+                partitions.addAll(partitionCache.getAll(partialKeys).values().stream().toList());
+            }
         } else {
             Map<PartitionCacheKey, HivePartition> map = loadPartitions(keys);
             partitions = map.values().stream().collect(Collectors.toList());
