@@ -500,7 +500,7 @@ public class HiveMetaStoreCache {
         try {
             if (withCache) {
                 for (List<FileCacheKey> partialKeys : Lists.partition(keys, BATCH_LOAD_CNT)) {
-                    fileLists.addAll(fileCacheRef.get().getAll(partialKeys).values().stream().collect(Collectors.toList());
+                    fileLists.addAll(fileCacheRef.get().getAll(partialKeys).values().stream().collect(Collectors.toList()));
                 }
             } else {
                 if (concurrent) {
