@@ -107,25 +107,6 @@ public class ExternalMetaCacheMgr {
                 Config.max_external_cache_loader_thread_pool_size * 1000,
                 "CommonRefreshExecutor", 10, true);
 
-        if (!Env.isCheckpointThread()) {
-            new Thread(() -> {
-                ThreadPoolExecutor executor = (ThreadPoolExecutor) commonRefreshExecutor;
-                while (true) {
-                    BlockingQueue<Runnable> queue = executor.getQueue();
-                    LOG.info("mmc CommonRefreshExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
-                            queue.size(),
-                            queue.remainingCapacity(),
-                            executor.getCompletedTaskCount(),
-                            executor.getTaskCount()
-                    );
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }).start();
-        }
 
         // The queue size should be large enough,
         // because there may be thousands of partitions being queried at the same time.
@@ -145,6 +126,35 @@ public class ExternalMetaCacheMgr {
         hudiPartitionMgr = new HudiPartitionMgr(commonRefreshExecutor);
         icebergMetadataCacheMgr = new IcebergMetadataCacheMgr(commonRefreshExecutor);
         maxComputeMetadataCacheMgr = new MaxComputeMetadataCacheMgr();
+
+        if (!Env.isCheckpointThread()) {
+            new Thread(() -> {
+                ThreadPoolExecutor executor1 = (ThreadPoolExecutor) commonRefreshExecutor;
+                ThreadPoolExecutor executor2 = (ThreadPoolExecutor) scheduleExecutor;
+                while (true) {
+                    BlockingQueue<Runnable> queue = executor1.getQueue();
+                    LOG.info("mmc CommonRefreshExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
+                            queue.size(),
+                            queue.remainingCapacity(),
+                            executor1.getCompletedTaskCount(),
+                            executor1.getTaskCount()
+                    );
+
+                    BlockingQueue<Runnable> queue2 = executor2.getQueue();
+                    LOG.info("mmc scheduleExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
+                            queue2.size(),
+                            queue2.remainingCapacity(),
+                            executor2.getCompletedTaskCount(),
+                            executor2.getTaskCount()
+                    );
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }).start();
+        }
     }
 
     public ExecutorService getFileListingExecutor() {

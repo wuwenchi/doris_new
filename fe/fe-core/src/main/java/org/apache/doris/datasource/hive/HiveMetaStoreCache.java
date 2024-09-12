@@ -561,27 +561,27 @@ public class HiveMetaStoreCache {
     }
 
     public void invalidateTableCache(String dbName, String tblName) {
-        LOG.info("mmc invalidateTableCache {}.{}", dbName, tblName);
-        long t1 = System.currentTimeMillis();
+        // LOG.info("mmc invalidateTableCache {}.{}", dbName, tblName);
+        // long t1 = System.currentTimeMillis();
         partitionValuesCache.invalidate(new PartitionValueCacheKey(dbName, tblName, null));
-        long t2 = System.currentTimeMillis();
-        LOG.info("mmc invalidateTableCache values:{}, table:{}.{}", (t2-t1), dbName, tblName);
+        // long t2 = System.currentTimeMillis();
+        // LOG.info("mmc invalidateTableCache values:{}, table:{}.{}", (t2-t1), dbName, tblName);
         partitionCache.asMap().keySet().forEach(k -> {
             if (k.isSameTable(dbName, tblName)) {
                 partitionCache.invalidate(k);
             }
         });
-        long t3 = System.currentTimeMillis();
+        // long t3 = System.currentTimeMillis();
+        // LOG.info("mmc invalidateTableCache partition:{}, table:{}.{}", (t3-t2), dbName, tblName);
         long id = Util.genIdByName(dbName, tblName);
-        LOG.info("mmc invalidateTableCache partition:{}, table:{}.{}", (t3-t2), dbName, tblName);
         LoadingCache<FileCacheKey, FileCacheValue> fileCache = fileCacheRef.get();
         fileCache.asMap().keySet().forEach(k -> {
             if (k.isSameTable(id)) {
                 fileCache.invalidate(k);
             }
         });
-        long t4 = System.currentTimeMillis();
-        LOG.info("mmc invalidateTableCache file:{}, table:{}.{}", (t4-t3), dbName, tblName);
+        // long t4 = System.currentTimeMillis();
+        // LOG.info("mmc invalidateTableCache file:{}, table:{}.{}", (t4-t3), dbName, tblName);
 
         // PartitionValueCacheKey key = new PartitionValueCacheKey(dbName, tblName, null);
         // HivePartitionValues partitionValues = partitionValuesCache.getIfPresent(key);
@@ -662,24 +662,9 @@ public class HiveMetaStoreCache {
     }
 
     public void invalidateAll() {
-        ThreadPoolExecutor commonRefreshExecutor = (ThreadPoolExecutor) Env.getCurrentEnv().getExtMetaCacheMgr().getCommonRefreshExecutor();
-        BlockingQueue<Runnable> queue = commonRefreshExecutor.getQueue();
-        LOG.info("mmc CommonRefreshExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
-                queue.size(),
-                queue.remainingCapacity(),
-                commonRefreshExecutor.getCompletedTaskCount(),
-                commonRefreshExecutor.getTaskCount()
-        );
-        long l1 = System.currentTimeMillis();
         partitionValuesCache.invalidateAll();
-        long l2 = System.currentTimeMillis();
-        LOG.info("mmc invalidateAll values : " + (l2 - l1));
         partitionCache.invalidateAll();
-        long l3 = System.currentTimeMillis();
-        LOG.info("mmc invalidateAll partition: " + (l3 - l2));
         fileCacheRef.get().invalidateAll();
-        long l4 = System.currentTimeMillis();
-        LOG.info("mmc invalidateAll file: " + (l4 - l3));
         if (LOG.isDebugEnabled()) {
             LOG.debug("invalid all meta cache in catalog {}", catalog.getName());
         }
