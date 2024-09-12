@@ -152,10 +152,8 @@ public class HiveMetaStoreCache {
 
         CacheFactory partitionCacheFactory = new CacheFactory(
                 OptionalLong.of(28800L),
-                // OptionalLong.of(Config.external_cache_expire_time_minutes_after_access * 60L),
-                // Config.max_hive_partition_cache_num,
-                OptionalLong.of(2* 60L),
-                120000,
+                OptionalLong.empty(),
+                Config.max_hive_partition_cache_num,
                 false,
                 null);
         partitionCache = partitionCacheFactory.buildCache(new CacheLoader<PartitionCacheKey, HivePartition>() {
