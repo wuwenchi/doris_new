@@ -499,9 +499,7 @@ public class HiveMetaStoreCache {
         List<FileCacheValue> fileLists = new ArrayList<>();
         try {
             if (withCache) {
-                for (List<FileCacheKey> partialKeys : Lists.partition(keys, BATCH_LOAD_CNT)) {
-                    fileLists.addAll(fileCacheRef.get().getAll(partialKeys).values().stream().collect(Collectors.toList()));
-                }
+                fileLists = new ArrayList<>(fileCacheRef.get().getAll(keys).values());
             } else {
                 if (concurrent) {
                     List<Future<FileCacheValue>> pList = keys.stream().map(
@@ -549,9 +547,7 @@ public class HiveMetaStoreCache {
 
         List<HivePartition> partitions = new ArrayList<>();
         if (withCache) {
-            for (List<PartitionCacheKey> partialKeys : Lists.partition(keys, BATCH_LOAD_CNT)) {
-                partitions.addAll(partitionCache.getAll(partialKeys).values().stream().collect(Collectors.toList()));
-            }
+            partitions = partitionCache.getAll(keys).values().stream().collect(Collectors.toList());
         } else {
             Map<PartitionCacheKey, HivePartition> map = loadPartitions(keys);
             partitions = map.values().stream().collect(Collectors.toList());
