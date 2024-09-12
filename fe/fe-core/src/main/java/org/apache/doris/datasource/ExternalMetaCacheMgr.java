@@ -104,9 +104,28 @@ public class ExternalMetaCacheMgr {
 
         commonRefreshExecutor = ThreadPoolManager.newDaemonFixedThreadPool(
                 Config.max_external_cache_loader_thread_pool_size,
-                Config.max_external_cache_loader_thread_pool_size * 1000,
+                Config.max_external_cache_loader_thread_pool_size * 10000,
                 "CommonRefreshExecutor", 10, true);
 
+        // if (!Env.isCheckpointThread()) {
+        //     new Thread(() -> {
+        //         ThreadPoolExecutor executor = (ThreadPoolExecutor) commonRefreshExecutor;
+        //         while (true) {
+        //             BlockingQueue<Runnable> queue = executor.getQueue();
+        //             LOG.info("mmc CommonRefreshExecutor queue size:{}, remain:{}, completed:{}, taskCnt:{}" ,
+        //                     queue.size(),
+        //                     queue.remainingCapacity(),
+        //                     executor.getCompletedTaskCount(),
+        //                     executor.getTaskCount()
+        //             );
+        //             try {
+        //                 Thread.sleep(1000);
+        //             } catch (InterruptedException e) {
+        //                 throw new RuntimeException(e);
+        //             }
+        //         }
+        //     }).start();
+        // }
 
         // The queue size should be large enough,
         // because there may be thousands of partitions being queried at the same time.
