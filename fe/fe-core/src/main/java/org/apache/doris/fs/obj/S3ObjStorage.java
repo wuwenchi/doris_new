@@ -145,6 +145,9 @@ public class S3ObjStorage implements ObjStorage<S3Client> {
         } catch (UserException ue) {
             LOG.warn("connect to s3 failed: ", ue);
             return new Status(Status.ErrCode.COMMON_ERROR, "connect to s3 failed: " + ue.getMessage());
+        } catch (Throwable e) {
+            LOG.warn("mmc headObject exception", e);
+            return new Status(Status.ErrCode.COMMON_ERROR, "mmc headObject exception: " + e.getMessage());
         }
     }
 
@@ -207,6 +210,9 @@ public class S3ObjStorage implements ObjStorage<S3Client> {
         } catch (UserException ue) {
             LOG.warn("connect to s3 failed: ", ue);
             return new Status(Status.ErrCode.COMMON_ERROR, "connect to s3 failed: " + ue.getMessage());
+        } catch (Throwable e) {
+            LOG.warn("mmc deleteObject exception", e);
+            return new Status(Status.ErrCode.COMMON_ERROR, "mmc deleteObject exception: " + e.getMessage());
         }
     }
 

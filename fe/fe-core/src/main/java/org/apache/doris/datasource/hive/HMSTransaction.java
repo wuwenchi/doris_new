@@ -330,6 +330,7 @@ public class HMSTransaction implements Transaction {
 
             hmsCommitter.doCommit();
         } catch (Throwable t) {
+            LOG.warn("mmc Failed to commit for {}, abort it.", queryId);
             LOG.warn("Failed to commit for {}, abort it.", queryId);
             try {
                 hmsCommitter.abort();
@@ -645,6 +646,8 @@ public class HMSTransaction implements Transaction {
         try {
             if (!fs.directoryExists(directory.toString()).ok()) {
                 return new DeleteRecursivelyResult(true, ImmutableList.of());
+            } else {
+                LOG.info("mmc recursiveDeleteFiles should exists {} {}", directory.toString(), queryId);
             }
         } catch (Exception e) {
             ImmutableList.Builder<String> notDeletedEligibleItems = ImmutableList.builder();
@@ -674,6 +677,8 @@ public class HMSTransaction implements Transaction {
                 if (!deleteIfExists(file.getPath())) {
                     allDescendentsDeleted = false;
                     notDeletedEligibleItems.add(file.getPath().toString());
+                } else {
+                    LOG.info("mmc doRecursiveDeleteFiles error: {}", file.getPath().toString());
                 }
             } else {
                 allDescendentsDeleted = false;
@@ -706,6 +711,7 @@ public class HMSTransaction implements Transaction {
         if (status.ok()) {
             return true;
         }
+        LOG.info("mmc deleteIfExists should not proc");
         return !fs.exists(path.toString()).ok();
     }
 
@@ -1326,6 +1332,7 @@ public class HMSTransaction implements Transaction {
         }
 
         private void runS3cleanWhenSuccess() {
+            LOG.info("mmc runS3cleanWhenSuccess : {}, {}", s3cleanWhenSuccess, queryId);
             for (String path : s3cleanWhenSuccess) {
                 recursiveDeleteItems(new Path(path), false, true);
             }
@@ -1600,6 +1607,7 @@ public class HMSTransaction implements Transaction {
                         .multipartUpload(CompletedMultipartUpload.builder().parts(completedParts).build())
                         .build());
                 uncompletedMpuPendingUploads.remove(new UncompletedMpuPendingUpload(s3MPUPendingUpload, path));
+                LOG.info("mmc s3Commit success for {}, {}", s3MPUPendingUpload.getKey(), path);
             }, fileSystemExecutor));
         }
     }
