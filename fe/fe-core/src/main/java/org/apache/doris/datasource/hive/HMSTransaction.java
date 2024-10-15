@@ -645,9 +645,8 @@ public class HMSTransaction implements Transaction {
     private DeleteRecursivelyResult recursiveDeleteFiles(Path directory, boolean deleteEmptyDir, boolean reverse) {
         try {
             if (!fs.directoryExists(directory.toString()).ok()) {
-                return new DeleteRecursivelyResult(true, ImmutableList.of());
-            } else {
                 LOG.info("mmc recursiveDeleteFiles should exists {} {}", directory.toString(), queryId);
+                return new DeleteRecursivelyResult(true, ImmutableList.of());
             }
         } catch (Exception e) {
             ImmutableList.Builder<String> notDeletedEligibleItems = ImmutableList.builder();
@@ -677,7 +676,6 @@ public class HMSTransaction implements Transaction {
                 if (!deleteIfExists(file.getPath())) {
                     allDescendentsDeleted = false;
                     notDeletedEligibleItems.add(file.getPath().toString());
-                } else {
                     LOG.info("mmc doRecursiveDeleteFiles error: {}", file.getPath().toString());
                 }
             } else {

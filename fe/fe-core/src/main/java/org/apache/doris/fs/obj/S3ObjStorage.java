@@ -139,11 +139,11 @@ public class S3ObjStorage implements ObjStorage<S3Client> {
             if (e.statusCode() == HttpStatus.SC_NOT_FOUND) {
                 return new Status(Status.ErrCode.NOT_FOUND, "remote path does not exist: " + remotePath);
             } else {
-                LOG.warn("headObject failed:", e);
+                LOG.warn("mmc headObject failed:", e);
                 return new Status(Status.ErrCode.COMMON_ERROR, "headObject failed: " + e.getMessage());
             }
         } catch (UserException ue) {
-            LOG.warn("connect to s3 failed: ", ue);
+            LOG.warn("mmc connect to s3 failed: ", ue);
             return new Status(Status.ErrCode.COMMON_ERROR, "connect to s3 failed: " + ue.getMessage());
         } catch (Throwable e) {
             LOG.warn("mmc headObject exception", e);
@@ -202,14 +202,14 @@ public class S3ObjStorage implements ObjStorage<S3Client> {
             LOG.info("delete file " + remotePath + " success: " + response.toString());
             return Status.OK;
         } catch (S3Exception e) {
-            LOG.warn("delete file failed: ", e);
+            LOG.warn("mmc delete file failed: ", e);
             if (e.statusCode() == HttpStatus.SC_NOT_FOUND) {
                 return Status.OK;
             }
-            return new Status(Status.ErrCode.COMMON_ERROR, "delete file failed: " + e.getMessage());
+            return new Status(Status.ErrCode.COMMON_ERROR, "mmc delete file failed: " + e.getMessage());
         } catch (UserException ue) {
             LOG.warn("connect to s3 failed: ", ue);
-            return new Status(Status.ErrCode.COMMON_ERROR, "connect to s3 failed: " + ue.getMessage());
+            return new Status(Status.ErrCode.COMMON_ERROR, "mmc connect to s3 failed: " + ue.getMessage());
         } catch (Throwable e) {
             LOG.warn("mmc deleteObject exception", e);
             return new Status(Status.ErrCode.COMMON_ERROR, "mmc deleteObject exception: " + e.getMessage());
@@ -254,10 +254,10 @@ public class S3ObjStorage implements ObjStorage<S3Client> {
             LOG.info("total delete {} objects for dir {}", totalObjects, absolutePath);
             return Status.OK;
         } catch (DdlException e) {
-            return new Status(Status.ErrCode.COMMON_ERROR, "list objects for delete objects failed: " + e.getMessage());
-        } catch (Exception e) {
-            LOG.warn(String.format("delete objects %s failed", absolutePath), e);
-            return new Status(Status.ErrCode.COMMON_ERROR, "delete objects failed: " + e.getMessage());
+            return new Status(Status.ErrCode.COMMON_ERROR, "mmc list objects for delete objects failed: " + e.getMessage());
+        } catch (Throwable e) {
+            LOG.warn(String.format("mmc delete objects %s failed", absolutePath), e);
+            return new Status(Status.ErrCode.COMMON_ERROR, "mmc delete objects failed: " + e.getMessage());
         }
     }
 
