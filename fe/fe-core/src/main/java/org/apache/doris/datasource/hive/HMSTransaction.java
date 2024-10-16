@@ -1455,6 +1455,9 @@ public class HMSTransaction implements Transaction {
         }
 
         private void pruneAndDeleteStagingDirectories() {
+            if (declaredIntentionsToWrite == null) {
+                return;
+            }
             recursiveDeleteItems(new Path(declaredIntentionsToWrite), true, false);
         }
 
