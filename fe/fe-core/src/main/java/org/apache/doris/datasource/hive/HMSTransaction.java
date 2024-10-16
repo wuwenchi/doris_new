@@ -637,17 +637,27 @@ public class HMSTransaction implements Transaction {
         if (!deleteResult.getNotDeletedEligibleItems().isEmpty()) {
             LOG.warn("Failed to delete directory {}. Some eligible items can't be deleted: {}.",
                     directory.toString(), deleteResult.getNotDeletedEligibleItems());
+            throw new RuntimeException(
+                    String.format("Failed to delete directory %s. Some eligible items can't be deleted: %s.",
+                        directory, deleteResult.getNotDeletedEligibleItems()));
         } else if (deleteEmptyDir && !deleteResult.dirNotExists()) {
             LOG.warn("Failed to delete directory {} due to dir isn't empty", directory.toString());
+            throw new RuntimeException(
+                    String.format("Failed to delete directory %s due to dir isn't empty", directory));
         }
     }
 
     private DeleteRecursivelyResult recursiveDeleteFiles(Path directory, boolean deleteEmptyDir, boolean reverse) {
         try {
-            if (!fs.directoryExists(directory.toString()).ok()) {
-                LOG.info("mmc recursiveDeleteFiles should exists {} {}", directory.toString(), queryId);
+            Status status = fs.directoryExists(directory.toString());
+            if (status.getErrCode().equals(Status.ErrCode.NOT_FOUND)) {
                 return new DeleteRecursivelyResult(true, ImmutableList.of());
+            } else if (!status.ok()) {
+                ImmutableList.Builder<String> notDeletedEligibleItems = ImmutableList.builder();
+                notDeletedEligibleItems.add(directory.toString() + "/*");
+                return new DeleteRecursivelyResult(false, notDeletedEligibleItems.build());
             }
+
         } catch (Exception e) {
             ImmutableList.Builder<String> notDeletedEligibleItems = ImmutableList.builder();
             notDeletedEligibleItems.add(directory.toString() + "/*");

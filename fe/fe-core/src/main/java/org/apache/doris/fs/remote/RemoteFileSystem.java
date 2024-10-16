@@ -29,6 +29,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -40,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class RemoteFileSystem extends PersistentFileSystem implements Closeable {
+    private static final Logger LOG = LogManager.getLogger(RemoteFileSystem.class);
     // this field will be visited by multi-threads, better use volatile qualifier
     protected volatile org.apache.hadoop.fs.FileSystem dfsFileSystem = null;
     private final ReentrantLock fsLock = new ReentrantLock();
@@ -73,6 +76,7 @@ public abstract class RemoteFileSystem extends PersistentFileSystem implements C
         } catch (FileNotFoundException e) {
             return new Status(Status.ErrCode.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
+            LOG.warn("Failed to list files: {}", remotePath, e);
             return new Status(Status.ErrCode.COMMON_ERROR, e.getMessage());
         }
         return Status.OK;
