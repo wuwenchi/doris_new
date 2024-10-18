@@ -30,6 +30,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.aliyun.oss.AliyunOSSFileSystem;
+import org.apache.hadoop.fs.aliyun.oss.AliyunOSSFileSystemStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,6 +78,21 @@ public class S3FileSystem extends ObjFileSystem {
                             .forEach(entry -> conf.set(entry.getKey(), entry.getValue()));
                     try {
                         dfsFileSystem = FileSystem.get(new Path(remotePath).toUri(), conf);
+                        if (dfsFileSystem instanceof AliyunOSSFileSystem) {
+                            AliyunOSSFileSystem ossFs = (AliyunOSSFileSystem) dfsFileSystem;
+                            AliyunOSSFileSystemStore store = ossFs.getStore();
+                            if (store == null) {
+                                LOG.error("mmc nativeFileSystem error store!\nuri:{},\npropertiesi:{},\ntrace:{}",
+                                        new Path(remotePath).toUri(), PropertyConverter.convertToHadoopFSProperties(properties),
+                                        Thread.currentThread().getStackTrace());
+                                System.exit(0);
+                            } else if (store.getOssClient() == null) {
+                                LOG.error("mmc nativeFileSystem error oss client!\nuri:{},\npropertiesi:{},\ntrace:{}",
+                                        new Path(remotePath).toUri(), PropertyConverter.convertToHadoopFSProperties(properties),
+                                        Thread.currentThread().getStackTrace());
+                                System.exit(0);
+                            }
+                        }
                     } catch (Exception e) {
                         throw new UserException("Failed to get S3 FileSystem for " + e.getMessage(), e);
                     }
