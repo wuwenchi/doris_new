@@ -62,8 +62,9 @@ public abstract class RemoteFileSystem extends PersistentFileSystem implements C
 
     @Override
     public Status listFiles(String remotePath, boolean recursive, List<RemoteFile> result) {
+        org.apache.hadoop.fs.FileSystem fileSystem = null;
         try {
-            org.apache.hadoop.fs.FileSystem fileSystem = nativeFileSystem(remotePath);
+            fileSystem = nativeFileSystem(remotePath);
             Path locatedPath = new Path(remotePath);
             RemoteIterator<LocatedFileStatus> locatedFiles = getLocatedFiles(recursive, fileSystem, locatedPath);
             while (locatedFiles.hasNext()) {
@@ -76,7 +77,7 @@ public abstract class RemoteFileSystem extends PersistentFileSystem implements C
         } catch (FileNotFoundException e) {
             return new Status(Status.ErrCode.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
-            LOG.warn("Failed to list files: {}", remotePath, e);
+            LOG.warn("Failed to list files: {}", remotePath + ", " + fileSystem, e);
             System.exit(2);
             return new Status(Status.ErrCode.COMMON_ERROR, e.getMessage());
         }
