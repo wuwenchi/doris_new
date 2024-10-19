@@ -91,6 +91,8 @@ public class S3FileSystem extends ObjFileSystem {
                                         new Path(remotePath).toUri(), PropertyConverter.convertToHadoopFSProperties(properties),
                                         Thread.currentThread().getStackTrace());
                                 System.exit(0);
+                            } else {
+                                LOG.info("mmc success get S3 FileSystem {} !", dfsFileSystem);
                             }
                         }
                     } catch (Exception e) {

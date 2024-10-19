@@ -261,6 +261,12 @@ public class AliyunOSSFileSystemStore {
         }
     }
 
+
+
+
+
+
+
     /**
      * Return metadata of a given object key.
      *
@@ -271,6 +277,10 @@ public class AliyunOSSFileSystemStore {
         try {
             GenericRequest request = new GenericRequest(bucketName, key);
             request.setLogEnabled(false);
+            if (ossClient == null) {
+                LOG.info("mmc ossClient is null");
+                System.exit(1);
+            }
             ObjectMetadata objectMeta = ossClient.getObjectMetadata(request);
             statistics.incrementReadOps(1);
             return objectMeta;
