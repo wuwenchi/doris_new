@@ -77,6 +77,7 @@ public abstract class RemoteFileSystem extends PersistentFileSystem implements C
             return new Status(Status.ErrCode.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
             LOG.warn("Failed to list files: {}", remotePath, e);
+            System.exit(2);
             return new Status(Status.ErrCode.COMMON_ERROR, e.getMessage());
         }
         return Status.OK;

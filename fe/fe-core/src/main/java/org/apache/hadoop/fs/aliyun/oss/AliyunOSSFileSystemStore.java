@@ -279,7 +279,6 @@ public class AliyunOSSFileSystemStore {
             request.setLogEnabled(false);
             if (ossClient == null) {
                 LOG.info("mmc ossClient is null");
-                System.exit(1);
             }
             ObjectMetadata objectMeta = ossClient.getObjectMetadata(request);
             statistics.incrementReadOps(1);
