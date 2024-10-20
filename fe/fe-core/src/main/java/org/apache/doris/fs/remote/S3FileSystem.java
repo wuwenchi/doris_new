@@ -92,7 +92,7 @@ public class S3FileSystem extends ObjFileSystem {
                                         Thread.currentThread().getStackTrace());
                                 System.exit(0);
                             } else {
-                                LOG.info("mmc success get S3 FileSystem {}, {}!", dfsFileSystem, ossFs.getUri());
+                                LOG.info("mmc success get S3 FileSystem {}, {}, store:{}!", dfsFileSystem, ossFs.getUri(), ossFs.getStore());
                             }
                         }
                     } catch (Exception e) {

@@ -177,6 +177,7 @@ public class AliyunOSSFileSystemStore {
                     "version 2", listVersion);
         }
         useListV1 = (listVersion == 1);
+        LOG.warn("mmc OSS store is inited for {}, trace:{}.", this, Thread.currentThread().getStackTrace());
     }
 
     /**
@@ -278,7 +279,7 @@ public class AliyunOSSFileSystemStore {
             GenericRequest request = new GenericRequest(bucketName, key);
             request.setLogEnabled(false);
             if (ossClient == null) {
-                LOG.info("mmc ossClient is null");
+                LOG.warn("mmc ossClient is null");
             }
             ObjectMetadata objectMeta = ossClient.getObjectMetadata(request);
             statistics.incrementReadOps(1);
@@ -536,6 +537,7 @@ public class AliyunOSSFileSystemStore {
         if (ossClient != null) {
             ossClient.shutdown();
             ossClient = null;
+            LOG.warn("mmc OSS client is closed for {}, trace:{}.", this, Thread.currentThread().getStackTrace());
         }
     }
 
