@@ -108,7 +108,8 @@ public class S3FileSystem extends ObjFileSystem {
                                         Thread.currentThread().getStackTrace());
                                 System.exit(0);
                             } else {
-                                LOG.info("mmc success get S3 remoteFs:{}, nativeFs:{}, uri{}, store:{}, client:{}, trace:{}!", this, dfsFileSystem, ossFs.getUri(), ossFs.getStore(), ossFs.getStore().getOssClient(), Thread.currentThread().getStackTrace());
+                                // LOG.info("mmc success get S3 remoteFs:{}, nativeFs:{}, uri{}, store:{}, client:{}, trace:{}!", this, dfsFileSystem, ossFs.getUri(), ossFs.getStore(), ossFs.getStore().getOssClient(), Thread.currentThread().getStackTrace());
+                                LOG.info("mmc success get S3 remoteFs:{}, nativeFs:{}, uri:{}, store:{}, client:{}", this, dfsFileSystem, ossFs.getUri(), ossFs.getStore(), ossFs.getStore().getOssClient());
                             }
                         }
                     } catch (Exception e) {
@@ -120,7 +121,8 @@ public class S3FileSystem extends ObjFileSystem {
         }
         if (dfsFileSystem instanceof AliyunOSSFileSystem) {
             AliyunOSSFileSystem ossFs = (AliyunOSSFileSystem) dfsFileSystem;
-            LOG.info("mmc success get S3 remoteFs:{}, nativeFs:{}, uri{}, store:{}, client:{}, trace:{}!", this, dfsFileSystem, ossFs.getUri(), ossFs.getStore(), ossFs.getStore().getOssClient(), Thread.currentThread().getStackTrace());
+            // LOG.info("mmc success get S3 remoteFs:{}, nativeFs:{}, uri{}, store:{}, client:{}, trace:{}!", this, dfsFileSystem, ossFs.getUri(), ossFs.getStore(), ossFs.getStore().getOssClient(), Thread.currentThread().getStackTrace());
+            LOG.info("mmc success get S3 remoteFs:{}, nativeFs:{}, uri{}, store:{}, client:{}", this, dfsFileSystem, ossFs.getUri(), ossFs.getStore(), ossFs.getStore().getOssClient());
         }
         return dfsFileSystem;
     }

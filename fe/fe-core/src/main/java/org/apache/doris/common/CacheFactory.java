@@ -74,6 +74,15 @@ public class CacheFactory {
         return builder.build(cacheLoader);
     }
 
+    // Build a loading cache, without executor, it will use fork-join pool for refresh
+    public <K, V> LoadingCache<K, V> buildCache(CacheLoader<K, V> cacheLoader, RemovalListener<K, V> removalListener) {
+        Caffeine<Object, Object> builder = buildWithParams();
+        if (removalListener != null) {
+            builder.removalListener(removalListener);
+        }
+        return builder.build(cacheLoader);
+    }
+
     // Build a loading cache, with executor, it will use given executor for refresh
     public <K, V> LoadingCache<K, V> buildCache(CacheLoader<K, V> cacheLoader,
             RemovalListener<K, V> removalListener, ExecutorService executor) {

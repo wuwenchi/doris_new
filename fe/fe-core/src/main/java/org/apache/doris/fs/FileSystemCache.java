@@ -24,6 +24,9 @@ import org.apache.doris.fs.remote.RemoteFileSystem;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.aliyun.oss.AliyunOSSFileSystem;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +35,7 @@ import java.util.OptionalLong;
 
 public class FileSystemCache {
 
+    private static final Logger LOG = LogManager.getLogger(FileSystemCache.class);
     private final LoadingCache<FileSystemCacheKey, RemoteFileSystem> fileSystemCache;
 
     public FileSystemCache() {
@@ -42,7 +46,11 @@ public class FileSystemCache {
                 Config.max_remote_file_system_cache_num,
                 false,
                 null);
-        fileSystemCache = fsCacheFactory.buildCache(this::loadFileSystem);
+        fileSystemCache = fsCacheFactory.buildCache(
+                this::loadFileSystem,
+                (k, v, e) -> {
+                    LOG.info("mmc removed: remoteFs:{}", v);
+                });
     }
 
     private RemoteFileSystem loadFileSystem(FileSystemCacheKey key) {
