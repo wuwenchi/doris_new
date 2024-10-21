@@ -56,8 +56,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.util.VersionInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -81,8 +81,7 @@ import static org.apache.hadoop.fs.aliyun.oss.Constants.*;
  * Aliyun OSS.
  */
 public class AliyunOSSFileSystemStore {
-    public static final Logger LOG =
-            LoggerFactory.getLogger(AliyunOSSFileSystemStore.class);
+    private static final Logger LOG = LogManager.getLogger(AliyunOSSFileSystemStore.class);
     private String username;
     private FileSystem.Statistics statistics;
     private OSSClient ossClient;
@@ -535,9 +534,9 @@ public class AliyunOSSFileSystemStore {
      */
     public void close() {
         if (ossClient != null) {
+            LOG.warn("mmc OSS client is closed for store:{}, client:{}, trace:{}.", this, ossClient, Thread.currentThread().getStackTrace());
             ossClient.shutdown();
             ossClient = null;
-            LOG.warn("mmc OSS client is closed for {}, trace:{}.", this, Thread.currentThread().getStackTrace());
         }
     }
 

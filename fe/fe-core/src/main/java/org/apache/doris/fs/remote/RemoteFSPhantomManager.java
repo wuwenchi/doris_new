@@ -20,6 +20,7 @@ package org.apache.doris.fs.remote;
 import org.apache.doris.common.CustomThreadFactory;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.aliyun.oss.AliyunOSSFileSystem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,6 +102,9 @@ public class RemoteFSPhantomManager {
                             FileSystem fs = referenceMap.remove(phantomRef);
                             if (fs != null) {
                                 try {
+                                    if (fs instanceof AliyunOSSFileSystem) {
+                                        LOG.info("mmc try to close fs:{}, store:{}, client:{}", fs, ((AliyunOSSFileSystem)fs).getStore(), ((AliyunOSSFileSystem) fs).getStore().getOssClient());
+                                    }
                                     fs.close();
                                     LOG.info("Closed file system: {}", fs.getUri());
                                 } catch (IOException e) {
