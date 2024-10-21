@@ -63,6 +63,9 @@ public class RemoteFSPhantomManager {
     // Map storing the phantom references and their corresponding FileSystem objects
     private static final ConcurrentHashMap<PhantomReference<RemoteFileSystem>, FileSystem> referenceMap
             = new ConcurrentHashMap<>();
+    // Map storing the phantom references and their corresponding FileSystem objects
+    private static final ConcurrentHashMap<PhantomReference<RemoteFileSystem>, String> remoteMap
+            = new ConcurrentHashMap<>();
 
     // Flag indicating whether the cleanup thread has been started
     private static final AtomicBoolean isStarted = new AtomicBoolean(false);
@@ -81,6 +84,7 @@ public class RemoteFSPhantomManager {
         RemoteFileSystemPhantomReference phantomReference = new RemoteFileSystemPhantomReference(remoteFileSystem,
                 referenceQueue);
         referenceMap.put(phantomReference, remoteFileSystem.dfsFileSystem);
+        remoteMap.put(phantomReference, remoteFileSystem.toString());
     }
 
     /**
@@ -103,8 +107,9 @@ public class RemoteFSPhantomManager {
                             if (fs != null) {
                                 try {
                                     if (fs instanceof AliyunOSSFileSystem) {
-                                        LOG.info("mmc try to close fs:{}, store:{}, client:{}", fs, ((AliyunOSSFileSystem)fs).getStore(), ((AliyunOSSFileSystem) fs).getStore().getOssClient());
+                                        LOG.info("mmc try to close remoteFs:{}, nativeFs:{}, store:{}, client:{}", remoteMap.get(phantomRef), fs, ((AliyunOSSFileSystem)fs).getStore(), ((AliyunOSSFileSystem) fs).getStore().getOssClient());
                                     }
+                                    remoteMap.remove(phantomRef);
                                     fs.close();
                                     LOG.info("Closed file system: {}", fs.getUri());
                                 } catch (IOException e) {
