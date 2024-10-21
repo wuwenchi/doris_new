@@ -22,12 +22,15 @@ import org.apache.doris.common.util.LocationPath;
 import org.apache.doris.datasource.ExternalMetaCacheMgr;
 import org.apache.doris.fs.FileSystem;
 import org.apache.doris.fs.FileSystemCache;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class SwitchingFileSystem implements FileSystem {
+    private static final Logger LOG = LogManager.getLogger(SwitchingFileSystem.class);
 
     private final ExternalMetaCacheMgr extMetaCacheMgr;
 
@@ -123,10 +126,12 @@ public class SwitchingFileSystem implements FileSystem {
     }
 
     public FileSystem fileSystem(String location) {
-        return extMetaCacheMgr.getFsCache().getRemoteFileSystem(
+        FileSystem fs = extMetaCacheMgr.getFsCache().getRemoteFileSystem(
                 new FileSystemCache.FileSystemCacheKey(
                         LocationPath.getFSIdentity(location,
                                 bindBrokerName), properties, bindBrokerName));
+        LOG.info("mmc get remoteFs:{}", fs);
+        return fs;
     }
 }
 
