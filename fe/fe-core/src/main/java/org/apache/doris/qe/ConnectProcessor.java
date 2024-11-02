@@ -277,6 +277,11 @@ public abstract class ConnectProcessor {
                         LOG.debug("Nereids parse sql failed with other exception. Reason: {}. Statement: \"{}\".",
                                 e.getMessage(), convertedStmt);
                     }
+                    if (!sessionVariable.enableFallbackToOriginalPlanner) {
+                        LOG.warn("Parse failed. {}", ctx.getQueryIdentifier(), e);
+                        ctx.getState().setError(e.getMessage());
+                        return;
+                    }
                     nereidsParseException = e;
                 }
             }
