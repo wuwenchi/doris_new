@@ -35,6 +35,7 @@ import org.apache.doris.common.util.PropertyAnalyzer;
 import org.apache.doris.common.util.Util;
 import org.apache.doris.datasource.ExternalSchemaCache.SchemaCacheKey;
 import org.apache.doris.datasource.mvcc.MvccSnapshot;
+import org.apache.doris.nereids.trees.plans.commands.info.CreateOrReplaceBranchInfo;
 import org.apache.doris.nereids.trees.plans.logical.LogicalFileScan.SelectedPartitions;
 import org.apache.doris.persist.gson.GsonPostProcessable;
 import org.apache.doris.persist.gson.GsonUtils;
@@ -469,7 +470,7 @@ public class ExternalTable implements TableIf, Writable, GsonPostProcessable {
         return Objects.hashCode(name, db);
     }
 
-    public void createOrReplaceBranch(ExternalTable table, CreateOrReplaceBranchClause branchClause) throws UserException {
+    public void createOrReplaceBranch(ExternalTable table, CreateOrReplaceBranchInfo branchInfo) throws UserException {
         throw new UserException("Not support create or replace branch operation");
     }
 

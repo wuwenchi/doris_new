@@ -380,12 +380,14 @@ public class Alter {
         Env.getCurrentEnv().getEditLog().logModifyTableProperties(info);
     }
 
-    private void processAlterTableForExternalTable(ExternalTable table, List<AlterClause> alterClauses) {
+    private void processAlterTableForExternalTable(
+            ExternalTable table,
+            List<AlterClause> alterClauses) throws UserException {
         for (AlterClause alterClause : alterClauses) {
             if (alterClause instanceof ModifyTablePropertiesClause) {
                 setExternalTableAutoAnalyzePolicy(table, alterClauses);
             } else if (alterClause instanceof CreateOrReplaceBranchClause) {
-                table.createOrReplaceBranch(table, );
+                table.createOrReplaceBranch(table, ((CreateOrReplaceBranchClause) alterClause).getBranchInfo());
             }
         }
     }
@@ -686,7 +688,6 @@ public class Alter {
             case HUDI_EXTERNAL_TABLE:
             case TRINO_CONNECTOR_EXTERNAL_TABLE:
                 alterClauses.addAll(command.getOps());
-                setExternalTableAutoAnalyzePolicy((ExternalTable) tableIf, alterClauses);
                 processAlterTableForExternalTable((ExternalTable) tableIf, alterClauses);
                 return;
             default:

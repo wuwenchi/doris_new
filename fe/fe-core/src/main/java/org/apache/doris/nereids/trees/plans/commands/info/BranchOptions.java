@@ -25,13 +25,22 @@ public class BranchOptions {
             Optional.empty(),
             Optional.empty());
 
+    // user for branch and tag
     private final Optional<Long> snapshotId;
-    private final Optional<Integer> numSnapshots;
+
+    // user for branch and tag
     private final Optional<Long> retain;
+
+    // only user for branch
+    private final Optional<Integer> numSnapshots;
+
+    // only user for branch
     private final Optional<Long> retention;
 
-    public BranchOptions(Optional<Long> snapshotId, Optional<Integer> numSnapshots,
-                         Optional<Long> retain, Optional<Long> retention) {
+    public BranchOptions(Optional<Long> snapshotId,
+                         Optional<Integer> numSnapshots,
+                         Optional<Long> retain,
+                         Optional<Long> retention) {
         this.snapshotId = snapshotId;
         this.numSnapshots = numSnapshots;
         this.retain = retain;
