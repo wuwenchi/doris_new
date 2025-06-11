@@ -26,6 +26,7 @@ import org.apache.doris.analysis.AlterTableStmt;
 import org.apache.doris.analysis.AlterViewStmt;
 import org.apache.doris.analysis.ColumnRenameClause;
 import org.apache.doris.analysis.CreateMaterializedViewStmt;
+import org.apache.doris.analysis.CreateOrReplaceBranchClause;
 import org.apache.doris.analysis.DropMaterializedViewStmt;
 import org.apache.doris.analysis.DropPartitionClause;
 import org.apache.doris.analysis.DropPartitionFromIndexClause;
@@ -379,6 +380,16 @@ public class Alter {
         Env.getCurrentEnv().getEditLog().logModifyTableProperties(info);
     }
 
+    private void processAlterTableForExternalTable(ExternalTable table, List<AlterClause> alterClauses) {
+        for (AlterClause alterClause : alterClauses) {
+            if (alterClause instanceof ModifyTablePropertiesClause) {
+                setExternalTableAutoAnalyzePolicy(table, alterClauses);
+            } else if (alterClause instanceof CreateOrReplaceBranchClause) {
+                table.createOrReplaceBranch(table, );
+            }
+        }
+    }
+
     private boolean needChangeMTMVState(List<AlterClause> alterClauses) {
         for (AlterClause alterClause : alterClauses) {
             if (alterClause.needChangeMTMVState()) {
@@ -676,6 +687,7 @@ public class Alter {
             case TRINO_CONNECTOR_EXTERNAL_TABLE:
                 alterClauses.addAll(command.getOps());
                 setExternalTableAutoAnalyzePolicy((ExternalTable) tableIf, alterClauses);
+                processAlterTableForExternalTable((ExternalTable) tableIf, alterClauses);
                 return;
             default:
                 throw new DdlException("Do not support alter "

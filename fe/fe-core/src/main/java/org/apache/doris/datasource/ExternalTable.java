@@ -17,6 +17,7 @@
 
 package org.apache.doris.datasource;
 
+import org.apache.doris.analysis.CreateOrReplaceBranchClause;
 import org.apache.doris.catalog.Column;
 import org.apache.doris.catalog.DatabaseIf;
 import org.apache.doris.catalog.Env;
@@ -27,6 +28,7 @@ import org.apache.doris.catalog.TableIndexes;
 import org.apache.doris.catalog.constraint.Constraint;
 import org.apache.doris.common.AnalysisException;
 import org.apache.doris.common.Pair;
+import org.apache.doris.common.UserException;
 import org.apache.doris.common.io.Text;
 import org.apache.doris.common.io.Writable;
 import org.apache.doris.common.util.PropertyAnalyzer;
@@ -465,5 +467,13 @@ public class ExternalTable implements TableIf, Writable, GsonPostProcessable {
     @Override
     public int hashCode() {
         return Objects.hashCode(name, db);
+    }
+
+    public void createOrReplaceBranch(ExternalTable table, CreateOrReplaceBranchClause branchClause) throws UserException {
+        throw new UserException("Not support create or replace branch operation");
+    }
+
+    public void createOrReplaceTag(ExternalTable table) throws UserException {
+        throw new UserException("Not support create or replace tag operation");
     }
 }
