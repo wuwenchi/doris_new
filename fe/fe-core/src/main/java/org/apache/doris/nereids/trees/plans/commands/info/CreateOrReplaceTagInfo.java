@@ -17,32 +17,32 @@
 
 package org.apache.doris.nereids.trees.plans.commands.info;
 
-public class CreateOrReplaceBranchInfo {
+public class CreateOrReplaceTagInfo {
 
-    private final String branchName;
-    private final BranchOptions branchOptions;
+    private final String tagName;
+    private final TagOptions tagOptions;
     private final Boolean create;
     private final Boolean replace;
     private final Boolean ifNotExists;
 
-    public CreateOrReplaceBranchInfo(String branchName,
-                                     BranchOptions branchOptions,
-                                     boolean create,
-                                     boolean replace,
-                                     boolean ifNotExists) {
-        this.branchName = branchName;
-        this.branchOptions = branchOptions;
+    public CreateOrReplaceTagInfo(String tagName,
+                                  TagOptions tagOptions,
+                                  boolean create,
+                                  boolean replace,
+                                  boolean ifNotExists) {
+        this.tagName = tagName;
+        this.tagOptions = tagOptions;
         this.create = create;
         this.replace = replace;
         this.ifNotExists = ifNotExists;
     }
 
-    public String getBranchName() {
-        return branchName;
+    public String getTagName() {
+        return tagName;
     }
 
-    public BranchOptions getBranchOptions() {
-        return branchOptions;
+    public TagOptions getTagOptions() {
+        return tagOptions;
     }
 
     public Boolean getCreate() {

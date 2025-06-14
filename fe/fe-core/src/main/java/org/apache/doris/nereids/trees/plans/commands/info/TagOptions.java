@@ -19,25 +19,17 @@ package org.apache.doris.nereids.trees.plans.commands.info;
 
 import java.util.Optional;
 
-public class BranchOptions {
-    public static final BranchOptions EMPTY = new BranchOptions(Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
+public class TagOptions {
+    public static final TagOptions EMPTY = new TagOptions(Optional.empty(), Optional.empty());
 
     private final Optional<Long> snapshotId;
-    private final Optional<Long> retain;
-    private final Optional<Integer> numSnapshots;
-    private final Optional<Long> retention;
 
-    public BranchOptions(Optional<Long> snapshotId,
-                         Optional<Integer> numSnapshots,
-                         Optional<Long> retain,
-                         Optional<Long> retention) {
+    private final Optional<Long> retain;
+
+    public TagOptions(Optional<Long> snapshotId,
+                      Optional<Long> retain) {
         this.snapshotId = snapshotId;
-        this.numSnapshots = numSnapshots;
         this.retain = retain;
-        this.retention = retention;
     }
 
     public Optional<Long> getSnapshotId() {
@@ -46,13 +38,5 @@ public class BranchOptions {
 
     public Optional<Long> getRetain() {
         return retain;
-    }
-
-    public Optional<Integer> getNumSnapshots() {
-        return numSnapshots;
-    }
-
-    public Optional<Long> getRetention() {
-        return retention;
     }
 }

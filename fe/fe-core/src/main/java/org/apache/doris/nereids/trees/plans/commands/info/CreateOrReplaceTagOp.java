@@ -19,21 +19,21 @@ package org.apache.doris.nereids.trees.plans.commands.info;
 
 import org.apache.doris.alter.AlterOpType;
 import org.apache.doris.analysis.AlterTableClause;
-import org.apache.doris.analysis.CreateOrReplaceBranchClause;
+import org.apache.doris.analysis.CreateOrReplaceTagClause;
 
 import java.util.Map;
 
-public class CreateOrReplaceBranchOp extends AlterTableOp {
+public class CreateOrReplaceTagOp extends AlterTableOp {
 
-    private final CreateOrReplaceBranchInfo branchInfo;
+    private final CreateOrReplaceTagInfo tagInfo;
 
-    public CreateOrReplaceBranchOp(String branchName,
-                                   BranchOptions branchOptions,
-                                   boolean create,
-                                   boolean replace,
-                                   boolean ifNotExists) {
+    public CreateOrReplaceTagOp(String tagName,
+                                TagOptions tagOptions,
+                                boolean create,
+                                boolean replace,
+                                boolean ifNotExists) {
         super(AlterOpType.ALTER_BRANCH);
-        this.branchInfo = new CreateOrReplaceBranchInfo(branchName, branchOptions, create, replace, ifNotExists);
+        this.tagInfo = new CreateOrReplaceTagInfo(tagName, tagOptions, create, replace, ifNotExists);
     }
 
     @Override
@@ -58,6 +58,6 @@ public class CreateOrReplaceBranchOp extends AlterTableOp {
 
     @Override
     public AlterTableClause translateToLegacyAlterClause() {
-        return new CreateOrReplaceBranchClause(branchInfo);
+        return new CreateOrReplaceTagClause(tagInfo);
     }
 }

@@ -818,6 +818,7 @@ import org.apache.doris.nereids.trees.plans.commands.info.AlterSystemOp;
 import org.apache.doris.nereids.trees.plans.commands.info.AlterTableOp;
 import org.apache.doris.nereids.trees.plans.commands.info.AlterUserInfo;
 import org.apache.doris.nereids.trees.plans.commands.info.AlterViewInfo;
+import org.apache.doris.nereids.trees.plans.commands.info.BranchOptions;
 import org.apache.doris.nereids.trees.plans.commands.info.BuildIndexOp;
 import org.apache.doris.nereids.trees.plans.commands.info.BulkLoadDataDesc;
 import org.apache.doris.nereids.trees.plans.commands.info.BulkStorageDesc;
@@ -828,6 +829,8 @@ import org.apache.doris.nereids.trees.plans.commands.info.CopyIntoInfo;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateIndexOp;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateJobInfo;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateMTMVInfo;
+import org.apache.doris.nereids.trees.plans.commands.info.CreateOrReplaceBranchOp;
+import org.apache.doris.nereids.trees.plans.commands.info.CreateOrReplaceTagOp;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateResourceInfo;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateRoutineLoadInfo;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateTableInfo;
@@ -869,37 +872,8 @@ import org.apache.doris.nereids.trees.plans.commands.info.ModifyDistributionOp;
 import org.apache.doris.nereids.trees.plans.commands.info.ModifyEngineOp;
 import org.apache.doris.nereids.trees.plans.commands.info.ModifyFrontendOrBackendHostNameOp;
 import org.apache.doris.nereids.trees.plans.commands.info.ModifyFrontendOrBackendHostNameOp.ModifyOpType;
-import org.apache.doris.nereids.trees.plans.commands.info.ModifyPartitionOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ModifyTableCommentOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ModifyTablePropertiesOp;
-import org.apache.doris.nereids.trees.plans.commands.info.PartitionDefinition;
 import org.apache.doris.nereids.trees.plans.commands.info.PartitionDefinition.MaxValue;
-import org.apache.doris.nereids.trees.plans.commands.info.PartitionNamesInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.PartitionTableInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.PauseMTMVInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.RefreshMTMVInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.RenameColumnOp;
-import org.apache.doris.nereids.trees.plans.commands.info.RenamePartitionOp;
-import org.apache.doris.nereids.trees.plans.commands.info.RenameRollupOp;
-import org.apache.doris.nereids.trees.plans.commands.info.RenameTableOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ReorderColumnsOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ReplacePartitionOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ReplaceTableOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ResumeMTMVInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.RollupDefinition;
-import org.apache.doris.nereids.trees.plans.commands.info.SetCharsetAndCollateVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetLdapPassVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetNamesVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetPassVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetSessionVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetUserDefinedVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetUserPropertyVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.SetVarOp;
-import org.apache.doris.nereids.trees.plans.commands.info.ShowCreateMTMVInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.SimpleColumnDefinition;
-import org.apache.doris.nereids.trees.plans.commands.info.StepPartition;
-import org.apache.doris.nereids.trees.plans.commands.info.TableNameInfo;
-import org.apache.doris.nereids.trees.plans.commands.info.TableRefInfo;
+import org.apache.doris.nereids.trees.plans.commands.info.TagOptions;
 import org.apache.doris.nereids.trees.plans.commands.insert.BatchInsertIntoTableCommand;
 import org.apache.doris.nereids.trees.plans.commands.insert.InsertIntoTableCommand;
 import org.apache.doris.nereids.trees.plans.commands.insert.InsertOverwriteTableCommand;
@@ -8237,5 +8211,37 @@ public class LogicalPlanBuilder extends DorisParserBaseVisitor<Object> {
             }
         }
         return new ShowCopyCommand(dbName, orderKeys, whereClause, limit, offset);
+    }
+
+    @Override
+    public AlterTableOp visitCreateOrReplaceBranchClauses(DorisParser.CreateOrReplaceBranchClausesContext ctx) {
+        BranchOptions branchOptions = BranchOptions.EMPTY;
+        return new CreateOrReplaceBranchOp("", branchOptions, false, false, false);
+    }
+
+    @Override
+    public Object visitCreateOrReplaceBranchClause(DorisParser.CreateOrReplaceBranchClauseContext ctx) {
+        return super.visitCreateOrReplaceBranchClause(ctx);
+    }
+
+    @Override
+    public Object visitBranchOptions(DorisParser.BranchOptionsContext ctx) {
+        return super.visitBranchOptions(ctx);
+    }
+
+    @Override
+    public AlterTableOp visitCreateOrReplaceTagClauses(DorisParser.CreateOrReplaceTagClausesContext ctx) {
+        TagOptions tagOptions = TagOptions.EMPTY;
+        return new CreateOrReplaceTagOp("", tagOptions, false, false, false);
+    }
+
+    @Override
+    public Object visitCreateOrReplaceTagClause(DorisParser.CreateOrReplaceTagClauseContext ctx) {
+        return super.visitCreateOrReplaceTagClause(ctx);
+    }
+
+    @Override
+    public Object visitTagOptions(DorisParser.TagOptionsContext ctx) {
+        return super.visitTagOptions(ctx);
     }
 }

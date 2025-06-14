@@ -15,25 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package org.apache.doris.nereids.trees.plans.commands.info;
+package org.apache.doris.analysis;
 
 import org.apache.doris.alter.AlterOpType;
-import org.apache.doris.analysis.AlterTableClause;
-import org.apache.doris.analysis.CreateOrReplaceBranchClause;
+import org.apache.doris.common.UserException;
+import org.apache.doris.nereids.trees.plans.commands.info.CreateOrReplaceTagInfo;
 
-import java.util.Map;
+public class CreateOrReplaceTagClause extends AlterTableClause {
+    private final CreateOrReplaceTagInfo tagInfo;
 
-public class CreateOrReplaceBranchOp extends AlterTableOp {
-
-    private final CreateOrReplaceBranchInfo branchInfo;
-
-    public CreateOrReplaceBranchOp(String branchName,
-                                   BranchOptions branchOptions,
-                                   boolean create,
-                                   boolean replace,
-                                   boolean ifNotExists) {
+    public CreateOrReplaceTagClause(CreateOrReplaceTagInfo tagInfo) {
         super(AlterOpType.ALTER_BRANCH);
-        this.branchInfo = new CreateOrReplaceBranchInfo(branchName, branchOptions, create, replace, ifNotExists);
+        this.tagInfo = tagInfo;
     }
 
     @Override
@@ -47,17 +40,16 @@ public class CreateOrReplaceBranchOp extends AlterTableOp {
     }
 
     @Override
+    public void analyze(Analyzer analyzer) throws UserException {
+
+    }
+
+    @Override
     public String toSql() {
         return "";
     }
 
-    @Override
-    public Map<String, String> getProperties() {
-        return null;
-    }
-
-    @Override
-    public AlterTableClause translateToLegacyAlterClause() {
-        return new CreateOrReplaceBranchClause(branchInfo);
+    public CreateOrReplaceTagInfo getTagInfo() {
+        return tagInfo;
     }
 }

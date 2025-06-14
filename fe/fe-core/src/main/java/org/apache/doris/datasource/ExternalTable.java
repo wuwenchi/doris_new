@@ -17,7 +17,6 @@
 
 package org.apache.doris.datasource;
 
-import org.apache.doris.analysis.CreateOrReplaceBranchClause;
 import org.apache.doris.catalog.Column;
 import org.apache.doris.catalog.DatabaseIf;
 import org.apache.doris.catalog.Env;
@@ -36,6 +35,7 @@ import org.apache.doris.common.util.Util;
 import org.apache.doris.datasource.ExternalSchemaCache.SchemaCacheKey;
 import org.apache.doris.datasource.mvcc.MvccSnapshot;
 import org.apache.doris.nereids.trees.plans.commands.info.CreateOrReplaceBranchInfo;
+import org.apache.doris.nereids.trees.plans.commands.info.CreateOrReplaceTagInfo;
 import org.apache.doris.nereids.trees.plans.logical.LogicalFileScan.SelectedPartitions;
 import org.apache.doris.persist.gson.GsonPostProcessable;
 import org.apache.doris.persist.gson.GsonUtils;
@@ -474,7 +474,7 @@ public class ExternalTable implements TableIf, Writable, GsonPostProcessable {
         throw new UserException("Not support create or replace branch operation");
     }
 
-    public void createOrReplaceTag(ExternalTable table) throws UserException {
+    public void createOrReplaceTag(ExternalTable table, CreateOrReplaceTagInfo tagInfo) throws UserException {
         throw new UserException("Not support create or replace tag operation");
     }
 }
