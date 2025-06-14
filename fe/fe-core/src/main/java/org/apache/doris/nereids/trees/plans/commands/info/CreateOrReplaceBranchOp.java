@@ -23,17 +23,26 @@ import org.apache.doris.analysis.CreateOrReplaceBranchClause;
 
 import java.util.Map;
 
+/**
+ * Represents an operation to create or replace a branch within the Nereids module's plan structure.
+ * <p>
+ * This class extends {@link AlterTableOp} and encapsulates the logic for handling branch creation or replacement,
+ * including branch name, operation flags (create, replace, ifNotExists), and associated options defined in
+ * {@link BranchOptions}.
+ * <p>
+ * It also provides implementations for required methods such as SQL translation and legacy clause conversion.
+ */
 public class CreateOrReplaceBranchOp extends AlterTableOp {
 
     private final CreateOrReplaceBranchInfo branchInfo;
 
     public CreateOrReplaceBranchOp(String branchName,
-                                   BranchOptions branchOptions,
                                    boolean create,
                                    boolean replace,
-                                   boolean ifNotExists) {
+                                   boolean ifNotExists,
+                                   BranchOptions branchOptions) {
         super(AlterOpType.ALTER_BRANCH);
-        this.branchInfo = new CreateOrReplaceBranchInfo(branchName, branchOptions, create, replace, ifNotExists);
+        this.branchInfo = new CreateOrReplaceBranchInfo(branchName, create, replace, ifNotExists, branchOptions);
     }
 
     @Override

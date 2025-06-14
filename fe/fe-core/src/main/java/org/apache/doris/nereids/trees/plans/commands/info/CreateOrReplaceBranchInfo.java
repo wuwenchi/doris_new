@@ -17,6 +17,12 @@
 
 package org.apache.doris.nereids.trees.plans.commands.info;
 
+/**
+ * Represents the information required to create or replace a branch in the Nereids module.
+ * <p>
+ * This class encapsulates the branch name, operation flags (create, replace, ifNotExists),
+ * and associated branch options that control the behavior of the branch operation.
+ */
 public class CreateOrReplaceBranchInfo {
 
     private final String branchName;
@@ -26,15 +32,15 @@ public class CreateOrReplaceBranchInfo {
     private final Boolean ifNotExists;
 
     public CreateOrReplaceBranchInfo(String branchName,
-                                     BranchOptions branchOptions,
                                      boolean create,
                                      boolean replace,
-                                     boolean ifNotExists) {
+                                     boolean ifNotExists,
+                                     BranchOptions branchOptions) {
         this.branchName = branchName;
-        this.branchOptions = branchOptions;
         this.create = create;
         this.replace = replace;
         this.ifNotExists = ifNotExists;
+        this.branchOptions = branchOptions;
     }
 
     public String getBranchName() {

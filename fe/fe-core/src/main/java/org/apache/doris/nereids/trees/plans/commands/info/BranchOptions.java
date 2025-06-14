@@ -19,6 +19,12 @@ package org.apache.doris.nereids.trees.plans.commands.info;
 
 import java.util.Optional;
 
+/**
+ * Represents options that can be specified for a branch operation in the Nereids module.
+ * <p>
+ * This class encapsulates optional parameters that control the behavior of branch operations,
+ * such as specifying a snapshot ID, retention policy, number of snapshots to keep, and retention period.
+ */
 public class BranchOptions {
     public static final BranchOptions EMPTY = new BranchOptions(Optional.empty(),
             Optional.empty(),
@@ -31,12 +37,12 @@ public class BranchOptions {
     private final Optional<Long> retention;
 
     public BranchOptions(Optional<Long> snapshotId,
-                         Optional<Integer> numSnapshots,
                          Optional<Long> retain,
+                         Optional<Integer> numSnapshots,
                          Optional<Long> retention) {
         this.snapshotId = snapshotId;
-        this.numSnapshots = numSnapshots;
         this.retain = retain;
+        this.numSnapshots = numSnapshots;
         this.retention = retention;
     }
 
